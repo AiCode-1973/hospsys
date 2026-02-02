@@ -148,11 +148,11 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">CPF</label>
-                    <input type="text" name="cpf" required placeholder="000.000.000-00" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="text" name="cpf" required placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
                 <div class="col-span-2">
                     <label class="block text-sm font-bold text-slate-700 mb-1">COREN</label>
-                    <input type="text" name="coren" placeholder="Ex: 000.000-UF" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="text" name="coren" oninput="maskCoren(this)" placeholder="Ex: 000.000-UF" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
                 <div class="col-span-2">
                     <label class="block text-sm font-bold text-slate-700 mb-1">E-mail</label>
@@ -203,11 +203,11 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">CPF</label>
-                    <input type="text" name="cpf" id="edit-cpf" required placeholder="000.000.000-00" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="text" name="cpf" id="edit-cpf" required placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
                 <div class="col-span-2">
                     <label class="block text-sm font-bold text-slate-700 mb-1">COREN</label>
-                    <input type="text" name="coren" id="edit-coren" placeholder="Ex: 000.000-UF" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="text" name="coren" id="edit-coren" oninput="maskCoren(this)" placeholder="Ex: 000.000-UF" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
                 <div class="col-span-2">
                     <label class="block text-sm font-bold text-slate-700 mb-1">E-mail</label>
@@ -236,13 +236,45 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
 </div>
 
 <script>
+    function maskCPF(input) {
+        let value = input.value.replace(/\D/g, "");
+        if (value.length > 11) value = value.slice(0, 11);
+        
+        value = value.replace(/(\d{3})(\d)/, "$1.$2");
+        value = value.replace(/(\d{3})(\d)/, "$1.$2");
+        value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+        
+        input.value = value;
+    }
+
+    function maskCoren(input) {
+        let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        if (value.length > 6) {
+            let nums = value.slice(0, 6);
+            let uf = value.slice(6, 8);
+            value = nums.replace(/(\d{3})(\d{3})/, "$1.$2") + "-" + uf;
+        } else {
+            value = value.replace(/(\d{3})(\d{1,3})/, "$1.$2");
+        }
+        input.value = value;
+    }
+
     function openEditModal(user) {
         document.getElementById('edit-id').value = user.id;
         document.getElementById('edit-nome').value = user.nome;
         document.getElementById('edit-usuario').value = user.usuario;
-        document.getElementById('edit-cpf').value = user.cpf;
+        
+        // Aplica a máscara ao carregar o valor no modal de edição
+        const cpfInput = document.getElementById('edit-cpf');
+        cpfInput.value = user.cpf;
+        maskCPF(cpfInput);
+        
         document.getElementById('edit-email').value = user.email;
-        document.getElementById('edit-coren').value = user.coren || '';
+        
+        const corenInput = document.getElementById('edit-coren');
+        corenInput.value = user.coren || '';
+        maskCoren(corenInput);
+
         document.getElementById('edit-nivel').value = user.nivel_acesso;
         
         document.getElementById('modal-editar').classList.remove('hidden');
