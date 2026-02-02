@@ -142,6 +142,31 @@ $altas_periodo = $stmt_lista->fetchAll();
     </div>
 </div>
 
+<div class="print-summary" style="display: none; margin-bottom: 30px;">
+    <h4 style="font-size: 12px; font-weight: 900; text-transform: uppercase; color: #4a5568; margin-bottom: 10px; border-bottom: 1px solid #edf2f7; padding-bottom: 5px;">Resumo por Classificação</h4>
+    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
+        <?php foreach ($categorias as $nome => $style): 
+            $count = $resumo_bruto[$nome] ?? 0;
+            $nome_curto = str_replace(['Cuidados ', ' (CM)', ' (CI)', ' (AD)', ' (CSI)'], '', $nome);
+        ?>
+        <div style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+            <div style="font-size: 8px; font-weight: 900; color: #a0aec0; text-transform: uppercase; margin-bottom: 5px;"><?php echo $nome_curto; ?></div>
+            <div style="font-size: 18px; font-weight: 900; color: #2d3748;"><?php echo $count; ?></div>
+        </div>
+        <?php endforeach; ?>
+        <div style="padding: 10px; border: 1px solid #1a202c; border-radius: 8px; text-align: center; background: #f8fafc;">
+            <div style="font-size: 8px; font-weight: 900; color: #4a5568; text-transform: uppercase; margin-bottom: 5px;">Total Geral</div>
+            <div style="font-size: 18px; font-weight: 900; color: #1a202c;"><?php echo $total_periodo; ?></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        .print-summary { display: block !important; }
+    }
+</style>
+
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 no-print">
     <div>
         <h1 class="text-3xl font-black text-slate-800 tracking-tight">Relatório de Altas Fugulin</h1>
