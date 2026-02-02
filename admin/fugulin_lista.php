@@ -1,6 +1,25 @@
 <?php
 require_once __DIR__ . '/../includes/header.php';
 
+// Lógica de exclusão
+if (isset($_GET['excluir'])) {
+    $id_excluir = (int)$_GET['excluir'];
+    try {
+        // A verificação de permissão é feita pelo middleware no header.php
+        // mas aqui garantimos que apenas admins ou quem tem permissão de excluir pode fazer
+        if ($can_delete) {
+            $stmt = $pdo->prepare("DELETE FROM fugulin_classificacoes WHERE id = ?");
+            $stmt->execute([$id_excluir]);
+            $_SESSION['mensagem_sucesso'] = "Classificação excluída com sucesso!";
+        } else {
+            $_SESSION['mensagem_erro'] = "Você não tem permissão para excluir classificações.";
+        }
+    } catch (PDOException $e) {
+        $_SESSION['mensagem_erro'] = "Erro ao excluir: " . $e->getMessage();
+    }
+    redirect('fugulin_lista.php');
+}
+
 // Busca histórico de classificações
 $classificacoes = $pdo->query("
     SELECT c.*, u.nome as profissional, s.nome as setor, l.descricao as leito
@@ -84,10 +103,18 @@ $classificacoes = $pdo->query("
                             <span class="text-xs font-bold text-slate-600"><?php echo $c['profissional']; ?></span>
                         </div>
                     </td>
-                    <td class="px-8 py-5 text-center">
+                    <td class="px-8 py-5 text-center flex items-center justify-center gap-2">
                         <a href="fugulin_imprimir.php?id=<?php echo $c['id']; ?>" target="_blank" class="w-10 h-10 inline-flex items-center justify-center bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Imprimir Relatório">
                             <i class="fas fa-print"></i>
                         </a>
+                        <?php if ($can_delete): ?>
+                            <a href="?excluir=<?php echo $c['id']; ?>" 
+                               onclick="return confirm('Tem certeza que deseja excluir esta classificação?')"
+                               class="w-10 h-10 inline-flex items-center justify-center bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm" 
+                               title="Excluir">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        <?php endif; ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>
