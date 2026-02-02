@@ -32,13 +32,19 @@ if ($nivel_acesso === 'Administrador' && $rota_procurada !== 'admin/permissoes.p
 }
 
 // Busca permissão específica para o módulo
+// Ajuste: Se for uma página do Fugulin, usamos a permissão do fugulin_lista.php
+$rota_busca = $rota_procurada;
+if (strpos($rota_procurada, 'admin/fugulin_') !== false) {
+    $rota_busca = 'admin/fugulin_lista.php';
+}
+
 $stmt = $pdo->prepare("
     SELECT p.*, m.nome_modulo 
     FROM permissoes p 
     JOIN modulos m ON p.id_modulo = m.id 
     WHERE p.id_usuario = ? AND m.rota = ?
 ");
-$stmt->execute([$id_usuario, $rota_procurada]);
+$stmt->execute([$id_usuario, $rota_busca]);
 $permissao = $stmt->fetch();
 
 // Ignoramos a verificação para o home e dashboard por enquanto para evitar loop de redirecionamento

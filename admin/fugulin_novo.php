@@ -4,6 +4,9 @@ require_once __DIR__ . '/../includes/header.php';
 // Busca setores
 $setores = $pdo->query("SELECT * FROM fugulin_setores ORDER BY nome ASC")->fetchAll();
 
+// Busca pacientes para o datalist
+$pacientes = $pdo->query("SELECT * FROM fugulin_pacientes ORDER BY nome ASC")->fetchAll();
+
 // Busca questões e suas opções
 $questoes = $pdo->query("
     SELECT q.*, o.id as opcao_id, o.pontuacao, o.descricao as opcao_descricao
@@ -32,16 +35,63 @@ foreach ($questoes as $row) {
 
 // Busca todos os leitos para o JavaScript
 $leitos_all = $pdo->query("SELECT id, id_setor, descricao FROM fugulin_leitos ORDER BY descricao ASC")->fetchAll();
+
+// Lógica de Edição
+$id_edicao = isset($_GET['id']) ? (int)$_GET['id'] : null;
+$edicao_dados = null;
+$respostas_edicao = [];
+
+if ($id_edicao) {
+    if (!$can_edit) {
+        $_SESSION['mensagem_erro'] = "Você não tem permissão para editar classificações.";
+        redirect('fugulin_lista.php');
+    }
+    
+    $stmt_edit = $pdo->prepare("SELECT * FROM fugulin_classificacoes WHERE id = ?");
+    $stmt_edit->execute([$id_edicao]);
+    $edicao_dados = $stmt_edit->fetch();
+    
+    if ($edicao_dados) {
+        $stmt_resp = $pdo->prepare("SELECT id_questao, id_opcao FROM fugulin_respostas WHERE id_classificacao = ?");
+        $stmt_resp->execute([$id_edicao]);
+        $respostas_edicao = $stmt_resp->fetchAll(PDO::FETCH_KEY_PAIR);
+    } else {
+        $_SESSION['mensagem_erro'] = "Classificação não encontrada.";
+        redirect('fugulin_lista.php');
+    }
+}
+
+// Lógica de pré-seleção por paciente
+$id_paciente_url = isset($_GET['id_paciente']) ? (int)$_GET['id_paciente'] : null;
+if ($id_paciente_url && !$edicao_dados) {
+    $stmt_p_url = $pdo->prepare("SELECT * FROM fugulin_pacientes WHERE id = ?");
+    $stmt_p_url->execute([$id_paciente_url]);
+    $paciente_url_dados = $stmt_p_url->fetch();
+    if ($paciente_url_dados) {
+        $edicao_dados = [
+            'paciente_nome' => $paciente_url_dados['nome'],
+            'id_paciente' => $paciente_url_dados['id']
+        ];
+    }
+}
 ?>
 
 <div class="max-w-4xl mx-auto">
-    <div class="mb-8">
-        <h1 class="text-3xl font-black text-slate-800 tracking-tight">Escala de Fugulin</h1>
-        <p class="text-slate-500">Formulário de classificação de pacientes segundo o sistema de Fugulin.</p>
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight"><?php echo $id_edicao ? 'Editar Classificação' : 'Escala de Fugulin'; ?></h1>
+            <p class="text-slate-500"><?php echo $id_edicao ? 'Modifique os dados da classificação abaixo.' : 'Formulário de classificação de pacientes segundo o sistema de Fugulin.'; ?></p>
+        </div>
+        <a href="fugulin_lista.php" class="text-slate-400 hover:text-slate-600 font-bold text-sm flex items-center gap-2">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
     </div>
 
     <form action="fugulin_action.php" method="POST" id="fugulinForm" class="space-y-8 pb-20">
-        <input type="hidden" name="acao" value="salvar">
+        <input type="hidden" name="acao" value="<?php echo $id_edicao ? 'editar' : 'salvar'; ?>">
+        <?php if ($id_edicao): ?>
+            <input type="hidden" name="id_classificacao" value="<?php echo $id_edicao; ?>">
+        <?php endif; ?>
         <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
 
         <!-- Informações Básicas -->
@@ -59,10 +109,32 @@ $leitos_all = $pdo->query("SELECT id, id_setor, descricao FROM fugulin_leitos OR
             </div>
 
             <div class="md:col-span-1">
-                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Nome do Paciente *</label>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Paciente *</label>
                 <div class="flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-slate-200 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
                     <i class="fas fa-user-injured text-slate-400"></i>
-                    <input type="text" name="paciente" required placeholder="Ex: João da Silva" class="bg-transparent border-none focus:ring-0 text-slate-800 font-medium w-full text-sm">
+                    <input type="text" name="paciente_nome" id="paciente_input" list="pacientes_list" required placeholder="Nome do paciente..." value="<?php echo $edicao_dados ? cleanInput($edicao_dados['paciente_nome']) : ''; ?>" class="bg-transparent border-none focus:ring-0 text-slate-800 font-medium w-full text-sm">
+                    <datalist id="pacientes_list">
+                        <?php foreach ($pacientes as $p): ?>
+                            <option value="<?php echo cleanInput($p['nome']); ?>" data-prontuario="<?php echo $p['prontuario']; ?>">
+                        <?php endforeach; ?>
+                    </datalist>
+                </div>
+            </div>
+
+            <div class="md:col-span-1">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Prontuário / Registro</label>
+                <div class="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    <i class="fas fa-barcode text-slate-400"></i>
+                    <input type="text" name="paciente_prontuario" id="prontuario_input" placeholder="Novo ou existente" value="<?php 
+                        if ($edicao_dados) {
+                            if (isset($edicao_dados['id_paciente'])) {
+                                $id_para_busca = $edicao_dados['id_paciente'];
+                                $stmt_p = $pdo->prepare("SELECT prontuario FROM fugulin_pacientes WHERE id = ?");
+                                $stmt_p->execute([$id_para_busca]);
+                                echo $stmt_p->fetchColumn();
+                            }
+                        }
+                    ?>" class="bg-transparent border-none focus:ring-0 text-slate-800 font-medium w-full text-sm">
                 </div>
             </div>
 
@@ -72,7 +144,7 @@ $leitos_all = $pdo->query("SELECT id, id_setor, descricao FROM fugulin_leitos OR
                     <select name="setor" id="selectSetor" required class="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700 appearance-none text-sm">
                         <option value="">Selecione o Setor</option>
                         <?php foreach ($setores as $s): ?>
-                            <option value="<?php echo $s['id']; ?>"><?php echo $s['nome']; ?></option>
+                            <option value="<?php echo $s['id']; ?>" <?php echo (isset($edicao_dados['id_setor']) && $edicao_dados['id_setor'] == $s['id']) ? 'selected' : ''; ?>><?php echo $s['nome']; ?></option>
                         <?php endforeach; ?>
                     </select>
                     <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
@@ -84,8 +156,19 @@ $leitos_all = $pdo->query("SELECT id, id_setor, descricao FROM fugulin_leitos OR
             <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Leito / Acomodação *</label>
                 <div class="relative">
-                    <select name="leito" id="selectLeito" required disabled class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700 disabled:opacity-50 appearance-none text-sm">
-                        <option value="">Aguardando setor...</option>
+                    <select name="leito" id="selectLeito" required <?php echo $id_edicao ? '' : 'disabled'; ?> class="w-full px-4 py-3 <?php echo $id_edicao ? 'bg-white' : 'bg-slate-50'; ?> border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700 disabled:opacity-50 appearance-none text-sm">
+                        <?php if ($id_edicao): ?>
+                            <?php 
+                                $stmt_leitos = $pdo->prepare("SELECT id, descricao FROM fugulin_leitos WHERE id_setor = ?");
+                                $stmt_leitos->execute([$edicao_dados['id_setor']]);
+                                $leitos_setor = $stmt_leitos->fetchAll();
+                                foreach ($leitos_setor as $l):
+                            ?>
+                                <option value="<?php echo $l['id']; ?>" <?php echo ($edicao_dados['id_leito'] == $l['id']) ? 'selected' : ''; ?>><?php echo $l['descricao']; ?></option>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <option value="">Aguardando setor...</option>
+                        <?php endif; ?>
                     </select>
                     <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
                         <i class="fas fa-chevron-down text-xs"></i>
@@ -105,7 +188,7 @@ $leitos_all = $pdo->query("SELECT id, id_setor, descricao FROM fugulin_leitos OR
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <?php foreach ($q['opcoes'] as $opt): ?>
                             <label class="relative flex flex-col p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl cursor-pointer hover:bg-white hover:border-blue-200 transition-all group">
-                                <input type="radio" name="pergunta[<?php echo $q['id']; ?>]" value="<?php echo $opt['id']; ?>" data-pontos="<?php echo $opt['pontos']; ?>" required class="peer sr-only">
+                                <input type="radio" name="pergunta[<?php echo $q['id']; ?>]" value="<?php echo $opt['id']; ?>" data-pontos="<?php echo $opt['pontos']; ?>" required <?php echo (isset($respostas_edicao[$q['id']]) && $respostas_edicao[$q['id']] == $opt['id']) ? 'checked' : ''; ?> class="peer sr-only">
                                 <div class="flex items-center justify-between pointer-events-none mb-1">
                                     <span class="text-sm font-bold text-slate-600 group-hover:text-blue-600 transition-colors"><?php echo $opt['texto']; ?></span>
                                     <div class="w-5 h-5 border-2 border-slate-300 rounded-full flex items-center justify-center peer-checked:border-blue-600 peer-checked:bg-blue-600 transition-all">
@@ -129,7 +212,7 @@ $leitos_all = $pdo->query("SELECT id, id_setor, descricao FROM fugulin_leitos OR
                 <div id="totalPontos" class="text-4xl md:text-5xl font-black text-blue-600">0</div>
                 <div id="classificacaoText" class="px-4 py-2 bg-slate-100 rounded-2xl text-[10px] md:text-xs font-black uppercase text-slate-500 text-center w-full">Selecione as opções</div>
                 <button type="submit" class="mt-2 md:mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-bold shadow-lg shadow-blue-500/20 transition-all transform active:scale-95 text-sm md:text-base">
-                    Finalizar Classificação
+                    <?php echo $id_edicao ? 'Salvar Alterações' : 'Finalizar Classificação'; ?>
                 </button>
             </div>
         </div>
@@ -204,6 +287,35 @@ $leitos_all = $pdo->query("SELECT id, id_setor, descricao FROM fugulin_leitos OR
     }
 
     inputs.forEach(input => input.addEventListener('change', updateScore));
+
+    // Lógica de preenchimento do paciente
+    const pacienteInput = document.getElementById('paciente_input');
+    const prontuarioInput = document.getElementById('prontuario_input');
+    const pacientesList = document.getElementById('pacientes_list');
+
+    pacienteInput.addEventListener('input', function() {
+        const val = this.value;
+        const options = pacientesList.options;
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].value === val) {
+                prontuarioInput.value = options[i].getAttribute('data-prontuario');
+                prontuarioInput.readOnly = true;
+                prontuarioInput.parentElement.classList.add('opacity-70');
+                return;
+            }
+        }
+        prontuarioInput.readOnly = false;
+        prontuarioInput.parentElement.classList.remove('opacity-70');
+    });
+
+    // Inicializa se for edição
+    <?php if ($id_edicao): ?>
+        updateScore();
+        if (pacienteInput.value) {
+            prontuarioInput.readOnly = true;
+            prontuarioInput.parentElement.classList.add('opacity-70');
+        }
+    <?php endif; ?>
 </script>
 
 <?php 
