@@ -126,7 +126,8 @@ $csrf_token = generateCSRFToken();
         <div class="mt-8 pt-6 border-t border-slate-700/50 text-center">
             <p class="text-slate-500 text-xs">
                 &copy; <?php echo date('Y'); ?> HospSys - Sistema de Gestão Hospitalar. <br>
-                Desenvolvido com foco em segurança e performance.
+                Desenvolvido por Demetrius Figueiredo - <a href="https://www.aicode.dev.br" target="_blank" class="text-blue-400 hover:text-blue-300 font-bold transition-colors">AiCode</a>. 
+
             </p>
         </div>
     </div>
