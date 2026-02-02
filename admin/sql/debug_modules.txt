@@ -1,0 +1,113 @@
+Array
+(
+    [0] => Array
+        (
+            [id] => 1
+            [nome_modulo] => Estatísticas
+            [descricao] => Painel principal com estatísticas
+            [rota] => admin/dashboard.php
+            [icone] => fas fa-chart-line
+            [categoria] => Administração
+        )
+
+    [1] => Array
+        (
+            [id] => 2
+            [nome_modulo] => Usuários
+            [descricao] => Gerenciamento de usuários do sistema
+            [rota] => admin/usuarios.php
+            [icone] => fas fa-users
+            [categoria] => Administração
+        )
+
+    [2] => Array
+        (
+            [id] => 3
+            [nome_modulo] => Permissões
+            [descricao] => Gerenciamento de permissões de acesso
+            [rota] => admin/permissoes.php
+            [icone] => fas fa-user-shield
+            [categoria] => Administração
+        )
+
+    [3] => Array
+        (
+            [id] => 4
+            [nome_modulo] => Classificação Fugulin
+            [descricao] => Sistema de classificação de dependência de enfermagem
+            [rota] => admin/fugulin_novo.php
+            [icone] => fas fa-clipboard-list
+            [categoria] => Fugulin
+        )
+
+    [4] => Array
+        (
+            [id] => 5
+            [nome_modulo] => Histórico Fugulin
+            [descricao] => Histórico e relatórios de classificações
+            [rota] => admin/fugulin_lista.php
+            [icone] => fas fa-history
+            [categoria] => Fugulin
+        )
+
+    [5] => Array
+        (
+            [id] => 6
+            [nome_modulo] => Config. Fugulin
+            [descricao] => Configuração de questões e opções Fugulin
+            [rota] => admin/fugulin_config.php
+            [icone] => fas fa-cog
+            [categoria] => Fugulin
+        )
+
+    [6] => Array
+        (
+            [id] => 7
+            [nome_modulo] => Início
+            [descricao] => Bem-vindo ao sistema HospSys
+            [rota] => admin/home.php
+            [icone] => fas fa-home
+            [categoria] => 
+        )
+
+    [7] => Array
+        (
+            [id] => 8
+            [nome_modulo] => Altas Fugulin
+            [descricao] => 
+            [rota] => admin/fugulin_altas.php
+            [icone] => fas fa-archive
+            [categoria] => Fugulin
+        )
+
+    [8] => Array
+        (
+            [id] => 9
+            [nome_modulo] => Painel Fugulin
+            [descricao] => 
+            [rota] => admin/fugulin_dashboard.php
+            [icone] => fas fa-chart-pie
+            [categoria] => Fugulin
+        )
+
+    [9] => Array
+        (
+            [id] => 10
+            [nome_modulo] => Relatório de Altas
+            [descricao] => 
+            [rota] => admin/fugulin_relatorio_altas.php
+            [icone] => fas fa-file-contract
+            [categoria] => Fugulin
+        )
+
+    [10] => Array
+        (
+            [id] => 11
+            [nome_modulo] => Carrinho de Emergência
+            [descricao] => Gestão e checklist de carrinhos de parada
+            [rota] => admin/car_dashboard.php
+            [icone] => fas fa-ambulance
+            [categoria] => Suporte Assistencial
+        )
+
+)

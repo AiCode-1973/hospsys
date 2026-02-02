@@ -37,6 +37,12 @@ $rota_busca = $rota_procurada;
 if (strpos($rota_procurada, 'admin/fugulin_') !== false) {
     $rota_busca = 'admin/fugulin_lista.php';
 }
+if (strpos($rota_procurada, 'admin/car_') !== false) {
+    $rota_busca = 'admin/car_dashboard.php';
+}
+if (strpos($rota_procurada, 'admin/setores_') !== false) {
+    $rota_busca = 'admin/setores.php';
+}
 
 $stmt = $pdo->prepare("
     SELECT p.*, m.nome_modulo 
