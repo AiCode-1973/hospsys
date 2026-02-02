@@ -4,21 +4,41 @@ require_once __DIR__ . '/../includes/header.php';
 // Data de hoje
 $hoje = date('Y-m-d');
 
+// Busca todos os setores para o filtro
+$setores = $pdo->query("SELECT * FROM fugulin_setores ORDER BY nome ASC")->fetchAll();
+
+// Filtro de setor
+$filter_sector = isset($_GET['filter_sector']) ? (int)$_GET['filter_sector'] : null;
+
 // Busca o resumo por classificação do dia (última de cada paciente hoje, apenas ativos)
-$stmt_resumo = $pdo->query("
+$sql_resumo = "
     SELECT c.classificacao, COUNT(DISTINCT c.id_paciente) as total
     FROM fugulin_classificacoes c
     JOIN fugulin_pacientes p ON c.id_paciente = p.id
-    WHERE DATE(c.data_registro) = '$hoje'
+    WHERE DATE(c.data_registro) = ?
     AND p.ativo = 1
+";
+
+$params_resumo = [$hoje];
+
+if ($filter_sector) {
+    $sql_resumo .= " AND c.id_setor = ?";
+    $params_resumo[] = $filter_sector;
+}
+
+$sql_resumo .= "
     AND c.id = (
         SELECT id FROM fugulin_classificacoes 
         WHERE id_paciente = c.id_paciente 
-        AND DATE(data_registro) = '$hoje'
+        AND DATE(data_registro) = ?
         ORDER BY data_registro DESC LIMIT 1
     )
     GROUP BY c.classificacao
-");
+";
+$params_resumo[] = $hoje;
+
+$stmt_resumo = $pdo->prepare($sql_resumo);
+$stmt_resumo->execute($params_resumo);
 $resumo_bruto = $stmt_resumo->fetchAll(PDO::FETCH_KEY_PAIR);
 
 // Padronização das categorias para os cards
@@ -34,29 +54,58 @@ $categorias = [
 $total_dia = array_sum($resumo_bruto);
 
 // Busca lista de pacientes ativos classificados hoje
-$stmt_hoje = $pdo->query("
+$sql_hoje = "
     SELECT c.*, s.nome as setor, l.descricao as leito, u.nome as profissional
     FROM fugulin_classificacoes c
     JOIN usuarios u ON c.id_usuario = u.id
     JOIN fugulin_pacientes p ON c.id_paciente = p.id
     LEFT JOIN fugulin_setores s ON c.id_setor = s.id
     LEFT JOIN fugulin_leitos l ON c.id_leito = l.id
-    WHERE DATE(c.data_registro) = '$hoje'
+    WHERE DATE(c.data_registro) = ?
     AND p.ativo = 1
+";
+
+$params_hoje = [$hoje];
+
+if ($filter_sector) {
+    $sql_hoje .= " AND c.id_setor = ?";
+    $params_hoje[] = $filter_sector;
+}
+
+$sql_hoje .= "
     AND c.id = (
         SELECT id FROM fugulin_classificacoes 
         WHERE id_paciente = c.id_paciente 
-        AND DATE(data_registro) = '$hoje'
+        AND DATE(data_registro) = ?
         ORDER BY data_registro DESC LIMIT 1
     )
     ORDER BY c.data_registro DESC
-");
+";
+$params_hoje[] = $hoje;
+
+$stmt_hoje = $pdo->prepare($sql_hoje);
+$stmt_hoje->execute($params_hoje);
 $pacientes_hoje = $stmt_hoje->fetchAll();
 ?>
 
-<div class="mb-8">
-    <h1 class="text-3xl font-black text-slate-800 tracking-tight">Painel Fugulin</h1>
-    <p class="text-slate-500">Resumo das classificações de hoje: <span class="font-bold text-slate-700"><?php echo date('d/m/Y'); ?></span></p>
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+    <div>
+        <h1 class="text-3xl font-black text-slate-800 tracking-tight">Painel Fugulin</h1>
+        <p class="text-slate-500">Resumo das classificações de hoje: <span class="font-bold text-slate-700"><?php echo date('d/m/Y'); ?></span></p>
+    </div>
+    
+    <!-- Filtro de Setor -->
+    <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2">
+        <form id="filterForm" method="GET" class="flex items-center gap-2">
+            <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2">Filtrar Setor</span>
+            <select name="filter_sector" onchange="this.form.submit()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none pr-8 relative cursor-pointer">
+                <option value="">Todos os Setores</option>
+                <?php foreach ($setores as $s): ?>
+                    <option value="<?php echo $s['id']; ?>" <?php echo $filter_sector == $s['id'] ? 'selected' : ''; ?>><?php echo $s['nome']; ?></option>
+                <?php endforeach; ?>
+            </select>
+        </form>
+    </div>
 </div>
 
 <!-- Cards de Resumo -->

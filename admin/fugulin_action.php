@@ -193,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['acao']) && $_GET['acao'] === 'alta') {
     $id_paciente = (int)$_GET['id'];
     if ($id_paciente) {
-        $stmt = $pdo->prepare("UPDATE fugulin_pacientes SET ativo = 0 WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE fugulin_pacientes SET ativo = 0, data_alta = NOW() WHERE id = ?");
         $stmt->execute([$id_paciente]);
         $_SESSION['mensagem_sucesso'] = "Alta realizada com sucesso! O paciente não aparecerá mais na lista ativa.";
     }
@@ -204,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['acao']) && $_GET['acao'
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['acao']) && $_GET['acao'] === 'readmitir') {
     $id_paciente = (int)$_GET['id'];
     if ($id_paciente) {
-        $stmt = $pdo->prepare("UPDATE fugulin_pacientes SET ativo = 1 WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE fugulin_pacientes SET ativo = 1, data_alta = NULL WHERE id = ?");
         $stmt->execute([$id_paciente]);
         $_SESSION['mensagem_sucesso'] = "Paciente re-admitido com sucesso na monitoria ativa!";
     }
