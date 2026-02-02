@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $usuario_login = cleanInput($_POST['usuario']);
         $email = cleanInput($_POST['email']);
         $cpf = preg_replace('/[^0-9]/', '', $_POST['cpf']); // Limpa CPF
+        $coren = cleanInput($_POST['coren'] ?? '');
         $nivel_acesso = $_POST['nivel_acesso'];
         $senha = $_POST['senha'];
         
@@ -28,8 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
 
-            $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, cpf, usuario, senha_hash, nivel_acesso) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$nome, $email, $cpf, $usuario_login, $senha_hash, $nivel_acesso]);
+            $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, coren, cpf, usuario, senha_hash, nivel_acesso) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$nome, $email, $coren, $cpf, $usuario_login, $senha_hash, $nivel_acesso]);
             
             $id_novo_usuario = $pdo->lastInsertId();
 
@@ -53,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $usuario_login = cleanInput($_POST['usuario']);
         $email = cleanInput($_POST['email']);
         $cpf = preg_replace('/[^0-9]/', '', $_POST['cpf']);
+        $coren = cleanInput($_POST['coren'] ?? '');
         $nivel_acesso = $_POST['nivel_acesso'];
         $senha = $_POST['senha'] ?? '';
         
@@ -63,11 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     redirect('usuarios.php');
                 }
                 $senha_hash = password_hash($senha, PASSWORD_BCRYPT);
-                $stmt = $pdo->prepare("UPDATE usuarios SET nome = ?, email = ?, cpf = ?, usuario = ?, senha_hash = ?, nivel_acesso = ? WHERE id = ?");
-                $stmt->execute([$nome, $email, $cpf, $usuario_login, $senha_hash, $nivel_acesso, $id]);
+                $stmt = $pdo->prepare("UPDATE usuarios SET nome = ?, email = ?, coren = ?, cpf = ?, usuario = ?, senha_hash = ?, nivel_acesso = ? WHERE id = ?");
+                $stmt->execute([$nome, $email, $coren, $cpf, $usuario_login, $senha_hash, $nivel_acesso, $id]);
             } else {
-                $stmt = $pdo->prepare("UPDATE usuarios SET nome = ?, email = ?, cpf = ?, usuario = ?, nivel_acesso = ? WHERE id = ?");
-                $stmt->execute([$nome, $email, $cpf, $usuario_login, $nivel_acesso, $id]);
+                $stmt = $pdo->prepare("UPDATE usuarios SET nome = ?, email = ?, coren = ?, cpf = ?, usuario = ?, nivel_acesso = ? WHERE id = ?");
+                $stmt->execute([$nome, $email, $coren, $cpf, $usuario_login, $nivel_acesso, $id]);
             }
             $_SESSION['mensagem_sucesso'] = "Usuário '$nome' atualizado com sucesso!";
         } catch (PDOException $e) {

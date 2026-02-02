@@ -14,11 +14,11 @@ if (!$id) {
 
 // Busca dados da classificação
 $stmt = $pdo->prepare("
-    SELECT c.*, u.nome as profissional, s.nome as setor, l.descricao as leito
+    SELECT c.*, u.nome as profissional, u.coren, s.nome as setor, l.descricao as leito
     FROM fugulin_classificacoes c
     JOIN usuarios u ON c.id_usuario = u.id
-    JOIN fugulin_setores s ON c.id_setor = s.id
-    JOIN fugulin_leitos l ON c.id_leito = l.id
+    LEFT JOIN fugulin_setores s ON c.id_setor = s.id
+    LEFT JOIN fugulin_leitos l ON c.id_leito = l.id
     WHERE c.id = ?
 ");
 $stmt->execute([$id]);
@@ -251,6 +251,9 @@ $respostas = $stmt_resp->fetchAll();
             <div class="info-item">
                 <strong>Enfermeiro(a)</strong>
                 <span><?php echo $c['profissional']; ?></span>
+                <?php if(!empty($c['coren'])): ?>
+                    <small style="display: block; font-size: 10px; color: #718096; margin-top: 2px; font-weight: bold;">COREN: <?php echo cleanInput($c['coren']); ?></small>
+                <?php endif; ?>
             </div>
             <div class="info-item">
                 <strong>Data/Hora</strong>

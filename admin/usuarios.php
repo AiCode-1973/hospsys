@@ -55,7 +55,7 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
             <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider font-semibold">
                 <tr>
                     <th class="px-6 py-4">Usuário</th>
-                    <th class="px-6 py-4">CPF / Email</th>
+                    <th class="px-6 py-4">CPF / Email / Coren</th>
                     <th class="px-6 py-4">Nível de Acesso</th>
                     <th class="px-6 py-4">Status</th>
                     <th class="px-6 py-4 text-center">Ações</th>
@@ -78,6 +78,9 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
                     <td class="px-6 py-4">
                         <p class="text-sm text-slate-600 font-medium"><?php echo formatCPF($u['cpf']); ?></p>
                         <p class="text-xs text-slate-400"><?php echo cleanInput($u['email']); ?></p>
+                        <?php if(!empty($u['coren'])): ?>
+                            <p class="text-[10px] text-blue-500 font-black mt-1 uppercase tracking-tighter">Coren: <?php echo cleanInput($u['coren']); ?></p>
+                        <?php endif; ?>
                     </td>
                     <td class="px-6 py-4">
                         <?php 
@@ -148,6 +151,10 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
                     <input type="text" name="cpf" required placeholder="000.000.000-00" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
                 <div class="col-span-2">
+                    <label class="block text-sm font-bold text-slate-700 mb-1">COREN</label>
+                    <input type="text" name="coren" placeholder="Ex: 000.000-UF" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="col-span-2">
                     <label class="block text-sm font-bold text-slate-700 mb-1">E-mail</label>
                     <input type="email" name="email" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
@@ -199,6 +206,10 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
                     <input type="text" name="cpf" id="edit-cpf" required placeholder="000.000.000-00" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
                 <div class="col-span-2">
+                    <label class="block text-sm font-bold text-slate-700 mb-1">COREN</label>
+                    <input type="text" name="coren" id="edit-coren" placeholder="Ex: 000.000-UF" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="col-span-2">
                     <label class="block text-sm font-bold text-slate-700 mb-1">E-mail</label>
                     <input type="email" name="email" id="edit-email" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
@@ -231,6 +242,7 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
         document.getElementById('edit-usuario').value = user.usuario;
         document.getElementById('edit-cpf').value = user.cpf;
         document.getElementById('edit-email').value = user.email;
+        document.getElementById('edit-coren').value = user.coren || '';
         document.getElementById('edit-nivel').value = user.nivel_acesso;
         
         document.getElementById('modal-editar').classList.remove('hidden');
