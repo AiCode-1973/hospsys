@@ -106,7 +106,7 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
                             <a href="permissoes.php?usuario=<?php echo $u['id']; ?>" class="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all" title="Privilégios">
                                 <i class="fas fa-shield-alt text-sm"></i>
                             </a>
-                            <button class="w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-600 hover:text-white transition-all" title="Editar">
+                            <button onclick='openEditModal(<?php echo json_encode($u); ?>)' class="w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-600 hover:text-white transition-all" title="Editar">
                                 <i class="fas fa-edit text-sm"></i>
                             </button>
                             <a href="?excluir=<?php echo $u['id']; ?>" 
@@ -123,7 +123,7 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
     </div>
 </div>
 
-<!-- Modal Novo Usuário (Simplificado) -->
+<!-- Modal Novo Usuário -->
 <div id="modal-novo" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center">
@@ -172,6 +172,70 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
         </form>
     </div>
 </div>
+
+<!-- Modal Editar Usuário -->
+<div id="modal-editar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-slate-800">Editar Usuário</h3>
+            <button onclick="document.getElementById('modal-editar').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form action="usuarios_action.php" method="POST" class="p-6 space-y-4">
+            <input type="hidden" name="acao" value="editar">
+            <input type="hidden" name="id" id="edit-id">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Nome Completo</label>
+                    <input type="text" name="nome" id="edit-nome" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Usuário</label>
+                    <input type="text" name="usuario" id="edit-usuario" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">CPF</label>
+                    <input type="text" name="cpf" id="edit-cpf" required placeholder="000.000.000-00" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm font-bold text-slate-700 mb-1">E-mail</label>
+                    <input type="email" name="email" id="edit-email" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Nível de Acesso</label>
+                    <select name="nivel_acesso" id="edit-nivel" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="Usuário Padrão">Usuário Padrão</option>
+                        <option value="Administrador">Administrador</option>
+                        <option value="Gestor">Gestor</option>
+                        <option value="Visualizador">Visualizador</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Nova Senha (deixe em branco para não alterar)</label>
+                    <input type="password" name="senha" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-8">
+                <button type="button" onclick="document.getElementById('modal-editar').classList.add('hidden')" class="px-5 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition-all">Cancelar</button>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20">Salvar Alterações</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(user) {
+        document.getElementById('edit-id').value = user.id;
+        document.getElementById('edit-nome').value = user.nome;
+        document.getElementById('edit-usuario').value = user.usuario;
+        document.getElementById('edit-cpf').value = user.cpf;
+        document.getElementById('edit-email').value = user.email;
+        document.getElementById('edit-nivel').value = user.nivel_acesso;
+        
+        document.getElementById('modal-editar').classList.remove('hidden');
+    }
+</script>
 
 <?php 
 // Fecha o layout aberto no header.php

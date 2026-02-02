@@ -15,10 +15,20 @@ $stmt_menu = $pdo->prepare("
 $stmt_menu->execute([$_SESSION['user_id']]);
 $modulos_menu = $stmt_menu->fetchAll();
 
-// Se for admin, garante que vê todos os módulos (mesmo que não estejam na tabela de permissões individualmente)
+// Se for admin, garante que vê todos os módulos
 if ($_SESSION['user_nivel'] === 'Administrador') {
-    $stmt_admin = $pdo->query("SELECT * FROM modulos ORDER BY nome_modulo ASC");
+    $stmt_admin = $pdo->query("SELECT * FROM modulos ORDER BY categoria ASC, nome_modulo ASC");
     $modulos_menu = $stmt_admin->fetchAll();
+}
+
+// Organiza módulos por categoria
+$menu_organizado = [];
+foreach ($modulos_menu as $m) {
+    if ($m['categoria']) {
+        $menu_organizado['categorias'][$m['categoria']][] = $m;
+    } else {
+        $menu_organizado['standalone'][] = $m;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -44,6 +54,33 @@ if ($_SESSION['user_nivel'] === 'Administrador') {
             color: #60a5fa;
             border-left: 4px solid #3b82f6;
         }
+        .submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0 0 12px 12px;
+        }
+        .submenu.open {
+            max-height: 500px;
+        }
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+        /* Desktop Sidebar Toggle */
+        @media (min-width: 768px) {
+            body.sidebar-collapsed #sidebar {
+                width: 0;
+                transform: translateX(-100%);
+            }
+            #sidebar {
+                transition: transform 0.3s ease-in-out, width 0.3s ease-in-out, opacity 0.3s;
+            }
+            body.sidebar-collapsed #sidebar * {
+                opacity: 0;
+                pointer-events: none;
+            }
+        }
     </style>
 </head>
 <body class="h-full bg-slate-50 flex overflow-hidden">
@@ -52,7 +89,7 @@ if ($_SESSION['user_nivel'] === 'Administrador') {
     <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 z-40 hidden transition-opacity duration-300"></div>
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="sidebar-glass text-slate-300 fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full md:relative md:translate-x-0 flex flex-col flex-shrink-0 transition-transform duration-300 ease-in-out">
+    <aside id="sidebar" class="sidebar-glass text-slate-300 fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full md:relative md:translate-x-0 flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out">
         <div class="p-6 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
@@ -69,15 +106,55 @@ if ($_SESSION['user_nivel'] === 'Administrador') {
         <nav class="flex-1 px-4 space-y-1 mt-4 overflow-y-auto">
             <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4 px-2">Menu Principal</p>
             
-            <?php foreach ($modulos_menu as $modulo): ?>
-                <?php 
-                    $active = (strpos($_SERVER['PHP_SELF'], $modulo['rota']) !== false) ? 'active' : '';
-                ?>
-                <a href="<?php echo url($modulo['rota']); ?>" class="nav-item <?php echo $active; ?> flex items-center gap-3 px-3 py-3 rounded-lg transition-all">
-                    <i class="<?php echo $modulo['icone']; ?> w-5 text-center"></i>
-                    <span class="font-medium"><?php echo $modulo['nome_modulo']; ?></span>
-                </a>
-            <?php endforeach; ?>
+            <!-- Standalone Modules -->
+            <?php if (isset($menu_organizado['standalone'])): ?>
+                <?php foreach ($menu_organizado['standalone'] as $modulo): ?>
+                    <?php 
+                        $active = (strpos($_SERVER['PHP_SELF'], $modulo['rota']) !== false) ? 'active' : '';
+                    ?>
+                    <a href="<?php echo url($modulo['rota']); ?>" class="nav-item <?php echo $active; ?> flex items-center gap-3 px-3 py-3 rounded-lg transition-all">
+                        <i class="<?php echo $modulo['icone']; ?> w-5 text-center"></i>
+                        <span class="font-medium"><?php echo $modulo['nome_modulo']; ?></span>
+                    </a>
+                <?php endforeach; ?>
+            <?php endif; ?>
+
+            <!-- Categorized Modules (Dropdowns) -->
+            <?php if (isset($menu_organizado['categorias'])): ?>
+                <?php foreach ($menu_organizado['categorias'] as $cat_nome => $items): ?>
+                    <?php 
+                        $cat_active = false;
+                        foreach ($items as $item) {
+                            if (strpos($_SERVER['PHP_SELF'], $item['rota']) !== false) {
+                                $cat_active = true;
+                                break;
+                            }
+                        }
+                    ?>
+                    <div class="space-y-1">
+                        <button onclick="toggleSubmenu('<?php echo $cat_nome; ?>')" 
+                                class="w-full nav-item <?php echo $cat_active ? 'text-blue-400' : ''; ?> flex items-center justify-between gap-3 px-3 py-3 rounded-lg transition-all">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-layer-group w-5 text-center"></i>
+                                <span class="font-medium"><?php echo $cat_nome; ?></span>
+                            </div>
+                            <i id="arrow-<?php echo $cat_nome; ?>" class="fas fa-chevron-down text-[10px] transition-transform <?php echo $cat_active ? 'rotate-180' : ''; ?>"></i>
+                        </button>
+                        
+                        <div id="submenu-<?php echo $cat_nome; ?>" class="submenu <?php echo $cat_active ? 'open' : ''; ?> flex flex-col pl-4">
+                            <?php foreach ($items as $modulo): ?>
+                                <?php 
+                                    $active = (strpos($_SERVER['PHP_SELF'], $modulo['rota']) !== false) ? 'active' : '';
+                                ?>
+                                <a href="<?php echo url($modulo['rota']); ?>" class="nav-item <?php echo $active; ?> flex items-center gap-3 px-3 py-3 rounded-lg transition-all text-sm">
+                                    <i class="<?php echo $modulo['icone']; ?> w-4 text-center opacity-70"></i>
+                                    <span><?php echo str_replace(' Fugulin', '', $modulo['nome_modulo']); ?></span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </nav>
 
         <div class="p-4 border-t border-slate-800">
@@ -102,8 +179,8 @@ if ($_SESSION['user_nivel'] === 'Administrador') {
         <!-- Top Header -->
         <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 z-10 shadow-sm">
             <div class="flex items-center gap-4">
-                <!-- Hamburger Button -->
-                <button id="openSidebar" class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                <!-- Sidebar Toggle Button (Always visible) -->
+                <button id="openSidebar" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
                 <h2 class="text-lg md:text-xl font-bold text-slate-800 truncate">
@@ -153,15 +230,35 @@ if ($_SESSION['user_nivel'] === 'Administrador') {
             <?php endif; ?>
 
 <script>
-    // Logic for Mobile Sidebar Toggle
+    // Logic for Sidebar Toggle
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
     const openBtn = document.getElementById('openSidebar');
     const closeBtn = document.getElementById('closeSidebar');
+    const body = document.body;
+
+    // Load saved state
+    if (localStorage.getItem('sidebarState') === 'collapsed' && window.innerWidth >= 768) {
+        body.classList.add('sidebar-collapsed');
+    }
 
     function toggleSidebar() {
-        sidebar.classList.toggle('-translate-x-full');
-        overlay.classList.toggle('hidden');
+        if (window.innerWidth < 768) {
+            // Mobile: Slide in/out with overlay
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        } else {
+            // Desktop: Toggle collapsed class on body
+            body.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebarState', body.classList.contains('sidebar-collapsed') ? 'collapsed' : 'expanded');
+        }
+    }
+
+    function toggleSubmenu(cat) {
+        const submenu = document.getElementById('submenu-' + cat);
+        const arrow = document.getElementById('arrow-' + cat);
+        submenu.classList.toggle('open');
+        arrow.classList.toggle('rotate-180');
     }
 
     if (openBtn) openBtn.addEventListener('click', toggleSidebar);
