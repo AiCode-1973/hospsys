@@ -4,7 +4,7 @@ require_once __DIR__ . '/../includes/header.php';
 // Apenas administradores podem gerenciar usuários (regra extra além do middleware)
 if ($_SESSION['user_nivel'] !== 'Administrador') {
     $_SESSION['mensagem_erro'] = "Acesso restrito a administradores.";
-    redirect('dashboard.php');
+    redirect(url('admin/home.php'));
 }
 
 // Lógica de exclusão

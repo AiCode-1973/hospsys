@@ -15,11 +15,13 @@ $stmt_menu = $pdo->prepare("
 $stmt_menu->execute([$_SESSION['user_id']]);
 $modulos_menu = $stmt_menu->fetchAll();
 
-// Se for admin, garante que vê todos os módulos
-if ($_SESSION['user_nivel'] === 'Administrador') {
-    $stmt_admin = $pdo->query("SELECT * FROM modulos ORDER BY categoria ASC, nome_modulo ASC");
-    $modulos_menu = $stmt_admin->fetchAll();
-}
+// Ordena os módulos recuperados pela consulta de permissões
+usort($modulos_menu, function($a, $b) {
+    if ($a['categoria'] === $b['categoria']) {
+        return strcmp($a['nome_modulo'], $b['nome_modulo']);
+    }
+    return strcmp($a['categoria'], $b['categoria']);
+});
 
 // Organiza módulos por categoria
 $menu_organizado = [];
@@ -186,7 +188,7 @@ foreach ($modulos_menu as $m) {
                 <h2 class="text-lg md:text-xl font-bold text-slate-800 truncate">
                     <?php 
                         // Tenta encontrar o nome do módulo atual
-                        $titulo = "Dashboard";
+                        $titulo = "Início";
                         foreach ($modulos_menu as $m) {
                             if (strpos($_SERVER['PHP_SELF'], $m['rota']) !== false) {
                                 $titulo = $m['nome_modulo'];

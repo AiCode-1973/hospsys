@@ -5,8 +5,8 @@
 require_once __DIR__ . '/includes/functions.php';
 
 if (isLoggedIn()) {
-    header("Location: admin/dashboard.php");
+    redirect(url('admin/home.php'));
 } else {
-    header("Location: auth/login.php");
+    redirect(url('auth/login.php'));
 }
 exit;

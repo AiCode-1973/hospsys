@@ -3,7 +3,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 if (isLoggedIn()) {
-    redirect('../admin/dashboard.php');
+    redirect(url('admin/home.php'));
 }
 
 $erro = '';
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             logAccess($pdo, $user['id'], $usuario, 1, 'Login realizado com sucesso.');
             
-            redirect('../admin/dashboard.php');
+            redirect(url('admin/home.php'));
         } else {
             // Falha no login
             $erro = "Usuário ou senha inválidos.";

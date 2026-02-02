@@ -41,14 +41,13 @@ $stmt = $pdo->prepare("
 $stmt->execute([$id_usuario, $rota_procurada]);
 $permissao = $stmt->fetch();
 
-// Se não houver registro de permissão e não for admin, ou se não puder visualizar
-// Ignoramos a verificação para o dashboard principal por enquanto (ou adicionamos ele na tabela)
-if ($rota_procurada !== 'admin/dashboard.php') {
+// Ignoramos a verificação para o home e dashboard por enquanto para evitar loop de redirecionamento
+if ($rota_procurada !== 'admin/home.php') {
     if (!$permissao || $permissao['pode_visualizar'] == 0) {
-        if ($nivel_acesso !== 'Administrador') {
-            $_SESSION['mensagem_erro'] = "Você não tem permissão para acessar este módulo.";
-            redirect(url('admin/dashboard.php'));
-        }
+        // Se for admin e não tiver permissão específica, talvez devêssemos permitir? 
+        // O usuário pediu "apenas o que tem permissão", então vamos ser rigorosos.
+        $_SESSION['mensagem_erro'] = "Você não tem permissão para acessar este módulo.";
+        redirect(url('admin/home.php'));
     }
 }
 

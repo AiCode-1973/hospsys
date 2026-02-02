@@ -33,12 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $id_novo_usuario = $pdo->lastInsertId();
 
-            // Atribui permissões básicas (visualização) para todos os módulos existentes
-            $modulos = $pdo->query("SELECT id FROM modulos")->fetchAll(PDO::FETCH_COLUMN);
-            $stmt_perm = $pdo->prepare("INSERT INTO permissoes (id_usuario, id_modulo, pode_visualizar) VALUES (?, ?, ?)");
-            foreach ($modulos as $id_modulo) {
-                $stmt_perm->execute([$id_novo_usuario, $id_modulo, 1]);
-            }
+            // Atribui apenas a permissão do módulo Início (ID 7) por padrão
+            $stmt_perm = $pdo->prepare("INSERT INTO permissoes (id_usuario, id_modulo, pode_visualizar) VALUES (?, 7, 1)");
+            $stmt_perm->execute([$id_novo_usuario]);
 
             $pdo->commit();
             $_SESSION['mensagem_sucesso'] = "Usuário '$nome' criado com sucesso!";
