@@ -23,7 +23,7 @@ $sql = "
     LEFT JOIN usuarios u ON c.id_usuario = u.id
     LEFT JOIN fugulin_setores s ON c.id_setor = s.id
     LEFT JOIN fugulin_leitos l ON c.id_leito = l.id
-    WHERE 1=1
+    WHERE p.ativo = 1
 ";
 
 $params = [];
@@ -159,6 +159,11 @@ $pacientes = $stmt->fetchAll();
                         </a>
                         <a href="fugulin_novo.php?id_paciente=<?php echo $p['id']; ?>" class="w-10 h-10 inline-flex items-center justify-center bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all shadow-sm" title="Nova Avaliação">
                             <i class="fas fa-plus-circle"></i>
+                        </a>
+                        <a href="fugulin_action.php?acao=alta&id=<?php echo $p['id']; ?>" 
+                           onclick="return confirm('Confirmar alta do paciente <?php echo cleanInput($p['nome']); ?>? Ele deixará de aparecer na lista ativa.')"
+                           class="w-10 h-10 inline-flex items-center justify-center bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm" title="Dar Alta">
+                            <i class="fas fa-sign-out-alt"></i>
                         </a>
                     </td>
                 </tr>

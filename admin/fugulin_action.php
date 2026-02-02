@@ -188,4 +188,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Lógica de Alta (GET)
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['acao']) && $_GET['acao'] === 'alta') {
+    $id_paciente = (int)$_GET['id'];
+    if ($id_paciente) {
+        $stmt = $pdo->prepare("UPDATE fugulin_pacientes SET ativo = 0 WHERE id = ?");
+        $stmt->execute([$id_paciente]);
+        $_SESSION['mensagem_sucesso'] = "Alta realizada com sucesso! O paciente não aparecerá mais na lista ativa.";
+    }
+    redirect('fugulin_lista.php');
+}
 ?>

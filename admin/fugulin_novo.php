@@ -4,8 +4,8 @@ require_once __DIR__ . '/../includes/header.php';
 // Busca setores
 $setores = $pdo->query("SELECT * FROM fugulin_setores ORDER BY nome ASC")->fetchAll();
 
-// Busca pacientes para o datalist
-$pacientes = $pdo->query("SELECT * FROM fugulin_pacientes ORDER BY nome ASC")->fetchAll();
+// Busca pacientes ativos para o datalist
+$pacientes = $pdo->query("SELECT * FROM fugulin_pacientes WHERE ativo = 1 ORDER BY nome ASC")->fetchAll();
 
 // Busca questões e suas opções
 $questoes = $pdo->query("
