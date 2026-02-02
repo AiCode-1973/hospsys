@@ -47,8 +47,8 @@ $stmt = $pdo->prepare("
 $stmt->execute([$id_usuario, $rota_busca]);
 $permissao = $stmt->fetch();
 
-// Ignoramos a verificação para o home e dashboard por enquanto para evitar loop de redirecionamento
-if ($rota_procurada !== 'admin/home.php') {
+// Ignoramos a verificação para o home e perfil por serem acessos básicos para todos os usuários
+if (!in_array($rota_procurada, ['admin/home.php', 'admin/perfil.php', 'admin/perfil_action.php'])) {
     if (!$permissao || $permissao['pode_visualizar'] == 0) {
         // Se for admin e não tiver permissão específica, talvez devêssemos permitir? 
         // O usuário pediu "apenas o que tem permissão", então vamos ser rigorosos.

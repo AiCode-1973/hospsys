@@ -206,6 +206,20 @@ foreach ($modulos_menu as $m) {
                     <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
                     <i class="fas fa-bell text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"></i>
                 </div>
+                
+                <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
+                
+                <!-- Perfil do Usuário no Topo -->
+                <a href="<?php echo url('admin/perfil.php'); ?>" class="flex items-center gap-3 hover:bg-slate-50 p-1 rounded-xl transition-all group" title="Meu Perfil / Alterar Senha">
+                    <div class="hidden md:flex flex-col items-end">
+                        <span class="text-xs font-black text-slate-800 uppercase tracking-tighter leading-none group-hover:text-blue-600 transition-colors"><?php echo $_SESSION['user_nome']; ?></span>
+                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1"><?php echo $_SESSION['user_nivel']; ?></span>
+                    </div>
+                    <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200 group-hover:border-blue-300 group-hover:bg-blue-50 transition-all">
+                        <i class="fas fa-user-circle text-slate-400 group-hover:text-blue-500 transition-colors"></i>
+                    </div>
+                </a>
+
                 <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
                 <span class="text-xs md:text-sm text-slate-500 font-medium whitespace-nowrap"><?php echo date('d/m/Y'); ?></span>
             </div>
