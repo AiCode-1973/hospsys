@@ -45,42 +45,52 @@ $leitos_all = $pdo->query("SELECT id, id_setor, descricao FROM fugulin_leitos OR
         <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
 
         <!-- Informações Básicas -->
-        <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6 relative overflow-hidden">
-            <div class="absolute top-0 right-0 p-4 opacity-10">
+        <div class="bg-white p-4 md:p-8 rounded-3xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10 hidden md:block">
                 <i class="fas fa-id-card text-7xl text-blue-600"></i>
             </div>
             
-            <div class="col-span-2 md:col-span-1">
-                <label class="block text-sm font-black text-slate-700 uppercase tracking-widest mb-2">Profissional</label>
+            <div class="md:col-span-1">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Enfermeiro(a) Responsável</label>
                 <div class="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-2xl border border-slate-200">
                     <i class="fas fa-user-md text-slate-400"></i>
-                    <input type="text" value="<?php echo $_SESSION['user_nome']; ?>" readonly class="bg-transparent border-none focus:ring-0 text-slate-600 font-bold w-full">
+                    <input type="text" value="<?php echo $_SESSION['user_nome']; ?>" readonly class="bg-transparent border-none focus:ring-0 text-slate-600 font-bold w-full text-sm">
                 </div>
             </div>
 
-            <div class="col-span-2 md:col-span-1">
-                <label class="block text-sm font-black text-slate-700 uppercase tracking-widest mb-2">Paciente *</label>
+            <div class="md:col-span-1">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Nome do Paciente *</label>
                 <div class="flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-slate-200 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
                     <i class="fas fa-user-injured text-slate-400"></i>
-                    <input type="text" name="paciente" required placeholder="Nome completo do paciente" class="bg-transparent border-none focus:ring-0 text-slate-800 font-medium w-full">
+                    <input type="text" name="paciente" required placeholder="Ex: João da Silva" class="bg-transparent border-none focus:ring-0 text-slate-800 font-medium w-full text-sm">
                 </div>
             </div>
 
             <div>
-                <label class="block text-sm font-black text-slate-700 uppercase tracking-widest mb-2">Setor *</label>
-                <select name="setor" id="selectSetor" required class="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700">
-                    <option value="">Selecione o Setor</option>
-                    <?php foreach ($setores as $s): ?>
-                        <option value="<?php echo $s['id']; ?>"><?php echo $s['nome']; ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Setor Assistencial *</label>
+                <div class="relative">
+                    <select name="setor" id="selectSetor" required class="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700 appearance-none text-sm">
+                        <option value="">Selecione o Setor</option>
+                        <?php foreach ($setores as $s): ?>
+                            <option value="<?php echo $s['id']; ?>"><?php echo $s['nome']; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
             </div>
 
             <div>
-                <label class="block text-sm font-black text-slate-700 uppercase tracking-widest mb-2">Leito *</label>
-                <select name="leito" id="selectLeito" required disabled class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700 disabled:opacity-50">
-                    <option value="">Selecione primeiro o Setor</option>
-                </select>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Leito / Acomodação *</label>
+                <div class="relative">
+                    <select name="leito" id="selectLeito" required disabled class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700 disabled:opacity-50 appearance-none text-sm">
+                        <option value="">Aguardando setor...</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
             </div>
         </div>
 
