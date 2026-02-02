@@ -77,7 +77,72 @@ $stmt_lista->execute($params_lista);
 $altas_periodo = $stmt_lista->fetchAll();
 ?>
 
-<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+<style>
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm;
+        }
+        body { 
+            background: white !important;
+            padding: 0 !important;
+        }
+        .container-print {
+            box-shadow: none !important;
+            border: none !important;
+            width: 100% !important;
+            padding: 0 !important;
+        }
+        /* Esconde elementos desnecessários na impressão */
+        .no-print, 
+        #sidebar, 
+        header, 
+        .bg-white.p-6.rounded-3xl.shadow-sm, /* Barra de filtros */
+        .bg-blue-600.p-8.rounded-3xl, /* Card de exportação */
+        #openSidebar {
+            display: none !important;
+        }
+        /* Ajusta cores para impressão econômica */
+        .bg-slate-900, .bg-slate-800 {
+            background-color: #f8fafc !important;
+            color: #1a202c !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+        .text-white { color: #1a202c !important; }
+        .shadow-xl { shadow: none !important; }
+        
+        /* Força fundo colorido em navegadores que suportam */
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        
+        /* Cabeçalho de impressão */
+        .print-header {
+            display: flex !important;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #2d3748;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+    }
+
+    .print-header { display: none; }
+</style>
+
+<div class="print-header">
+    <div class="flex items-center gap-4">
+        <img src="../images/hse.png" alt="Logo HSE" style="height: 60px;">
+        <div>
+            <h2 style="font-size: 20px; font-weight: 900; color: #1a202c; text-transform: uppercase; margin: 0;">Hospital Santo Expedito</h2>
+            <p style="font-size: 11px; color: #718096; margin: 0; font-weight: bold;">Compromisso com a Vida</p>
+        </div>
+    </div>
+    <div style="text-align: right;">
+        <h3 style="font-size: 16px; font-weight: 800; color: #2d3748; margin: 0; text-transform: uppercase;">Relatório de Altas Fugulin</h3>
+        <p style="font-size: 10px; color: #a0aec0; margin: 2px 0 0;">Período: <?php echo date('d/m/Y', strtotime($data_inicio)); ?> à <?php echo date('d/m/Y', strtotime($data_fim)); ?></p>
+    </div>
+</div>
+
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 no-print">
     <div>
         <h1 class="text-3xl font-black text-slate-800 tracking-tight">Relatório de Altas Fugulin</h1>
         <p class="text-slate-500">Indicadores de pacientes que receberam alta por período.</p>
@@ -85,7 +150,7 @@ $altas_periodo = $stmt_lista->fetchAll();
 </div>
 
 <!-- Barra de Filtros por Período e Setor -->
-<div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-8">
+<div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-8 no-print">
     <form method="GET" class="flex flex-col md:flex-row items-end gap-4">
         <div class="flex-1 w-full">
             <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Data Início</label>
@@ -210,7 +275,7 @@ $altas_periodo = $stmt_lista->fetchAll();
             </div>
         </div>
 
-        <div class="bg-blue-600 p-8 rounded-3xl text-white shadow-xl shadow-blue-500/20">
+        <div class="bg-blue-600 p-8 rounded-3xl text-white shadow-xl shadow-blue-500/20 no-print">
              <h4 class="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Exportação</h4>
              <p class="text-sm font-bold mb-4">Deseja gerar um arquivo PDF deste relatório?</p>
              <button onclick="window.print()" class="w-full bg-white text-blue-600 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-all">
