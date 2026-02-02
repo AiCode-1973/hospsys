@@ -56,11 +56,21 @@ $respostas = $stmt_resp->fetchAll();
             margin: 0;
             padding: 0;
             line-height: 1.4;
-            background: #fff;
+            background: #cbd5e0; /* Gray background for screen */
+            display: flex;
+            justify-content: center;
+            padding-top: 50px;
+            padding-bottom: 50px;
         }
         .container {
-            width: 100%;
-            max-width: 100%;
+            width: 21cm;
+            min-height: 29.7cm;
+            padding: 1.5cm;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            position: relative;
         }
         .header {
             display: flex;
@@ -168,27 +178,48 @@ $respostas = $stmt_resp->fetchAll();
             font-size: 10px;
             color: #a0aec0;
             text-align: center;
+            position: relative;
+            bottom: 0;
+            width: 100%;
         }
         .btn-print {
-            margin-top: 20px;
-            text-align: center;
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
         }
         .btn-print button {
-            padding: 12px 40px;
+            padding: 15px 30px;
             background: #3182ce;
             color: #fff;
             border: none;
-            border-radius: 8px;
+            border-radius: 50px;
             font-weight: bold;
+            font-size: 16px;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background 0.2s;
+            box-shadow: 0 10px 15px rgba(49, 130, 206, 0.4);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            items-center: flex;
+            gap: 10px;
         }
         .btn-print button:hover {
             background: #2b6cb0;
+            transform: translateY(-5px);
+            box-shadow: 0 15px 20px rgba(49, 130, 206, 0.6);
         }
         @media print {
-            body { padding: 0; }
+            body { 
+                background: none; 
+                padding: 0; 
+                display: block;
+            }
+            .container {
+                width: 100%;
+                min-height: initial;
+                box-shadow: none;
+                padding: 0;
+            }
             .btn-print { display: none; }
             .info-item { background: #f7fafc !important; -webkit-print-color-adjust: exact; }
             .summary-box { background: #2d3748 !important; -webkit-print-color-adjust: exact; }
