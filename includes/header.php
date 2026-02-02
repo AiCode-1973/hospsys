@@ -73,7 +73,7 @@ if ($_SESSION['user_nivel'] === 'Administrador') {
                 <?php 
                     $active = (strpos($_SERVER['PHP_SELF'], $modulo['rota']) !== false) ? 'active' : '';
                 ?>
-                <a href="/hospsys/<?php echo $modulo['rota']; ?>" class="nav-item <?php echo $active; ?> flex items-center gap-3 px-3 py-3 rounded-lg transition-all">
+                <a href="<?php echo url($modulo['rota']); ?>" class="nav-item <?php echo $active; ?> flex items-center gap-3 px-3 py-3 rounded-lg transition-all">
                     <i class="<?php echo $modulo['icone']; ?> w-5 text-center"></i>
                     <span class="font-medium"><?php echo $modulo['nome_modulo']; ?></span>
                 </a>
@@ -90,7 +90,7 @@ if ($_SESSION['user_nivel'] === 'Administrador') {
                     <p class="text-xs text-slate-500 truncate"><?php echo $_SESSION['user_nivel']; ?></p>
                 </div>
             </div>
-            <a href="/hospsys/auth/logout.php" class="mt-4 flex items-center gap-3 px-3 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
+            <a href="<?php echo url('auth/logout.php'); ?>" class="mt-4 flex items-center gap-3 px-3 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
                 <i class="fas fa-sign-out-alt"></i>
                 <span class="text-sm font-semibold">Sair do Sistema</span>
             </a>

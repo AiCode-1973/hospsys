@@ -9,7 +9,7 @@ require_once __DIR__ . '/../includes/functions.php';
 
 // 1. Verifica se o usuário está logado
 if (!isLoggedIn()) {
-    redirect('/hospsys/auth/login.php');
+    redirect(url('auth/login.php'));
 }
 
 // 2. Define o módulo atual baseado na URL
@@ -47,7 +47,7 @@ if ($rota_procurada !== 'admin/dashboard.php') {
     if (!$permissao || $permissao['pode_visualizar'] == 0) {
         if ($nivel_acesso !== 'Administrador') {
             $_SESSION['mensagem_erro'] = "Você não tem permissão para acessar este módulo.";
-            redirect('/hospsys/admin/dashboard.php');
+            redirect(url('admin/dashboard.php'));
         }
     }
 }

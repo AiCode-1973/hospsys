@@ -7,6 +7,16 @@ session_start();
 ob_start();
 
 /**
+ * Retorna o caminho absoluto do sistema
+ */
+function url($path = '') {
+    $script_name = $_SERVER['SCRIPT_NAME'];
+    $base_dir = str_replace(['/auth', '/admin', '/includes'], '', dirname($script_name));
+    $base_dir = rtrim($base_dir, '/\\');
+    return $base_dir . '/' . ltrim($path, '/');
+}
+
+/**
  * Sanitização de entrada para evitar XSS
  */
 function cleanInput($data) {
