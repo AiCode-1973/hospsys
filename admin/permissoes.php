@@ -93,10 +93,18 @@ $modulos_lista = $pdo->query("SELECT * FROM modulos ORDER BY nome_modulo ASC")->
                 <i class="fas fa-users text-blue-500"></i>
                 Selecione o Usuário
             </h3>
-            <div class="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+
+            <!-- Campo de Busca de Usuário -->
+            <div class="relative mb-4">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="Buscar usuário..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-xs font-medium">
+            </div>
+
+            <div id="userList" class="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                 <?php foreach ($usuarios_lista as $ul): ?>
                     <a href="?usuario=<?php echo $ul['id']; ?>" 
-                       class="block p-3 rounded-xl transition-all <?php echo ($id_usuario_selecionado == $ul['id']) ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'; ?>">
+                       data-name="<?php echo strtolower(cleanInput($ul['nome'])); ?>"
+                       class="user-item block p-3 rounded-xl transition-all <?php echo ($id_usuario_selecionado == $ul['id']) ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'; ?>">
                         <p class="text-sm font-bold truncate"><?php echo cleanInput($ul['nome']); ?></p>
                         <p class="text-[10px] uppercase opacity-70"><?php echo $ul['nivel_acesso']; ?></p>
                     </a>
@@ -210,7 +218,53 @@ $modulos_lista = $pdo->query("SELECT * FROM modulos ORDER BY nome_modulo ASC")->
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+    /* Estilo para quando não houver resultados na busca */
+    .no-results {
+        padding: 20px;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 600;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px dashed #e2e8f0;
+    }
 </style>
+
+<script>
+    function filterUsers() {
+        const input = document.getElementById('userSearch');
+        const filter = input.value.toLowerCase();
+        const list = document.getElementById('userList');
+        const items = list.getElementsByClassName('user-item');
+        let count = 0;
+
+        for (let i = 0; i < items.length; i++) {
+            const name = items[i].getAttribute('data-name');
+            if (name.indexOf(filter) > -1) {
+                items[i].style.display = "";
+                count++;
+            } else {
+                items[i].style.display = "none";
+            }
+        }
+
+        // Feedback caso não encontre nada
+        const existingNoResults = document.getElementById('noResultsMsg');
+        if (count === 0) {
+            if (!existingNoResults) {
+                const msg = document.createElement('div');
+                msg.id = 'noResultsMsg';
+                msg.className = 'no-results mt-2';
+                msg.innerHTML = '<i class="fas fa-search mb-2 block text-lg opacity-30"></i> Usuário não encontrado';
+                list.appendChild(msg);
+            }
+        } else if (existingNoResults) {
+            existingNoResults.remove();
+        }
+    }
+</script>
 
 <?php 
 echo "</div></main></body></html>";

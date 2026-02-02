@@ -33,8 +33,18 @@ if (isset($_GET['status']) && isset($_GET['id'])) {
     redirect('usuarios.php');
 }
 
-// Busca usuários
-$usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
+// Paginação
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+$page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+if ($page < 1) $page = 1;
+$offset = ($page - 1) * $limit;
+
+// Query para contar total de registros
+$total_registros = $pdo->query("SELECT COUNT(*) FROM usuarios")->fetchColumn();
+$total_paginas = ceil($total_registros / $limit);
+
+// Busca usuários com limites
+$usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC LIMIT $limit OFFSET $offset")->fetchAll();
 ?>
 
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -47,6 +57,20 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
         <i class="fas fa-plus"></i>
         Novo Usuário
     </button>
+</div>
+
+<!-- Controle de Registros (Separado) -->
+<div class="flex justify-end items-center mb-4 px-2">
+    <div class="flex items-center gap-3">
+        <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Mostrar:</span>
+        <select onchange="updateLimit(this.value)" class="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3 py-1.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer shadow-sm">
+            <option value="5" <?php echo $limit == 5 ? 'selected' : ''; ?>>5</option>
+            <option value="10" <?php echo $limit == 10 ? 'selected' : ''; ?>>10</option>
+            <option value="20" <?php echo $limit == 20 ? 'selected' : ''; ?>>20</option>
+            <option value="30" <?php echo $limit == 30 ? 'selected' : ''; ?>>30</option>
+        </select>
+        <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">por página</span>
+    </div>
 </div>
 
 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -124,6 +148,62 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
             </tbody>
         </table>
     </div>
+
+    <!-- Controles de Paginação -->
+    <?php if ($total_paginas > 1): ?>
+        <div class="bg-slate-50 px-8 py-4 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p class="text-xs font-bold text-slate-500">
+                Mostrando <span class="text-slate-800"><?php echo min($total_registros, $offset + 1); ?></span> 
+                a <span class="text-slate-800"><?php echo min($total_registros, $offset + $limit); ?></span> 
+                de <span class="text-slate-800"><?php echo $total_registros; ?></span> usuários
+            </p>
+            
+            <div class="flex items-center gap-2">
+                <?php 
+                    $query_params = $_GET;
+                    
+                    // Botão Anterior
+                    $prev_query = $query_params;
+                    $prev_query['p'] = $page - 1;
+                    $prev_link = "?" . http_build_query($prev_query);
+                ?>
+                
+                <?php if ($page > 1): ?>
+                    <a href="<?php echo $prev_link; ?>" class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm">
+                        <i class="fas fa-chevron-left text-xs"></i>
+                    </a>
+                <?php endif; ?>
+
+                <?php 
+                    $start_loop = max(1, $page - 2);
+                    $end_loop = min($total_paginas, $page + 2);
+                    
+                    for ($i = $start_loop; $i <= $end_loop; $i++):
+                        $page_query = $query_params;
+                        $page_query['p'] = $i;
+                        $page_link = "?" . http_build_query($page_query);
+                        $active_class = ($i == $page) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+                ?>
+                    <a href="<?php echo $page_link; ?>" class="w-8 h-8 flex items-center justify-center border <?php echo $active_class; ?> rounded-lg font-bold text-xs transition-all shadow-sm">
+                        <?php echo $i; ?>
+                    </a>
+                <?php endfor; ?>
+
+                <?php 
+                    // Botão Próximo
+                    $next_query = $query_params;
+                    $next_query['p'] = $page + 1;
+                    $next_link = "?" . http_build_query($next_query);
+                ?>
+                
+                <?php if ($page < $total_paginas): ?>
+                    <a href="<?php echo $next_link; ?>" class="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </a>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
 
 <!-- Modal Novo Usuário -->
@@ -236,6 +316,13 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC")->fetchAll();
 </div>
 
 <script>
+    function updateLimit(newLimit) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('limit', newLimit);
+        url.searchParams.set('p', '1');
+        window.location.href = url.toString();
+    }
+
     function maskCPF(input) {
         let value = input.value.replace(/\D/g, "");
         if (value.length > 11) value = value.slice(0, 11);
