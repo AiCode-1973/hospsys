@@ -199,4 +199,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['acao']) && $_GET['acao'
     }
     redirect('fugulin_lista.php');
 }
+
+// Lógica de Re-admissão (GET)
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['acao']) && $_GET['acao'] === 'readmitir') {
+    $id_paciente = (int)$_GET['id'];
+    if ($id_paciente) {
+        $stmt = $pdo->prepare("UPDATE fugulin_pacientes SET ativo = 1 WHERE id = ?");
+        $stmt->execute([$id_paciente]);
+        $_SESSION['mensagem_sucesso'] = "Paciente re-admitido com sucesso na monitoria ativa!";
+    }
+    redirect('fugulin_lista.php');
+}
 ?>
