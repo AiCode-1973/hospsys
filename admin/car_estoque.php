@@ -74,12 +74,13 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                     <th class="px-6 py-4 text-center">Atual</th>
                     <th class="px-6 py-4">Lote / Validade</th>
                     <th class="px-6 py-4 text-center">Status</th>
+                    <th class="px-6 py-4 text-center">Ações</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
                 <?php if (empty($itens_estoque)): ?>
                     <tr>
-                        <td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium">
+                        <td colspan="7" class="px-6 py-12 text-center text-slate-400 font-medium">
                             Nenhum item padronizado para este carrinho.<br>
                             Clique em <strong class="text-blue-600">"Padronizar Itens"</strong> para começar.
                         </td>
@@ -137,6 +138,15 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                             <?php echo $validade_alerta ?: $estoque_status; ?>
                         </span>
                     </td>
+                    <td class="px-6 py-4 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <a href="car_action.php?acao=excluir_padrao&id_carrinho=<?php echo $id_carrinho; ?>&id_item=<?php echo $i['item_id']; ?>" 
+                               onclick="return confirm('Remover este item do padrão deste carrinho?')"
+                               class="w-8 h-8 bg-slate-50 text-slate-300 rounded-lg hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </a>
+                        </div>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -163,15 +173,16 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
             
             <div class="bg-slate-50 p-6 rounded-3xl space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
                 <div class="grid grid-cols-12 gap-4 text-[9px] font-black uppercase text-slate-400 tracking-widest px-2 group">
-                    <div class="col-span-6">Item do Catálogo</div>
+                    <div class="col-span-5">Item do Catálogo</div>
                     <div class="col-span-3 text-center">Ideal</div>
                     <div class="col-span-3 text-center">Mínimo</div>
+                    <div class="col-span-1"></div>
                 </div>
 
                 <div id="container-itens" class="space-y-3">
                     <?php if (empty($itens_estoque)): ?>
                         <div class="item-row grid grid-cols-12 gap-4 items-center">
-                            <div class="col-span-6">
+                            <div class="col-span-5">
                                 <select name="item_id[]" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
                                     <option value="">Selecione um item...</option>
                                     <?php foreach ($todos_itens as $ti): ?>
@@ -185,11 +196,16 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                             <div class="col-span-3">
                                 <input type="number" name="qtd_minima[]" value="5" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-center text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
+                            <div class="col-span-1 text-right">
+                                <button type="button" onclick="removerLinha(this)" class="w-8 h-8 flex items-center justify-center text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                    <i class="fas fa-trash-alt text-xs"></i>
+                                </button>
+                            </div>
                         </div>
                     <?php else: ?>
                         <?php foreach($itens_estoque as $ie): ?>
                             <div class="item-row grid grid-cols-12 gap-4 items-center">
-                                <div class="col-span-6">
+                                <div class="col-span-5">
                                     <select name="item_id[]" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none">
                                         <option value="<?php echo $ie['item_id']; ?>" selected><?php echo cleanInput($ie['nome']); ?></option>
                                         <?php foreach ($todos_itens as $ti): ?>
@@ -204,6 +220,11 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                                 </div>
                                 <div class="col-span-3">
                                     <input type="number" name="qtd_minima[]" value="<?php echo $ie['quantidade_minima']; ?>" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-center text-slate-700">
+                                </div>
+                                <div class="col-span-1 text-right">
+                                    <button type="button" onclick="removerLinha(this)" class="w-8 h-8 flex items-center justify-center text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                        <i class="fas fa-trash-alt text-xs"></i>
+                                    </button>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -236,6 +257,18 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
         nova.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
         
         container.appendChild(nova);
+    }
+
+    function removerLinha(btn) {
+        const container = document.getElementById('container-itens');
+        if (container.querySelectorAll('.item-row').length > 1) {
+            btn.closest('.item-row').remove();
+        } else {
+            // Se for a última linha, apenas limpa os campos
+            const row = btn.closest('.item-row');
+            row.querySelectorAll('input').forEach(input => input.value = '');
+            row.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
+        }
     }
 </script>
 

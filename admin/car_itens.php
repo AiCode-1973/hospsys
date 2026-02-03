@@ -84,7 +84,10 @@ $items = $stmt->fetchAll();
                 <tr class="hover:bg-slate-50/50 transition-colors">
                     <td class="px-6 py-4">
                         <p class="font-bold text-slate-700"><?php echo cleanInput($item['nome']); ?></p>
-                        <p class="text-xs text-slate-400"><?php echo cleanInput($item['descricao']); ?></p>
+                        <?php if (!empty($item['nome_comercial'])): ?>
+                            <p class="text-xs font-black text-blue-500 uppercase tracking-widest"><?php echo cleanInput($item['nome_comercial']); ?></p>
+                        <?php endif; ?>
+                        <p class="text-xs text-slate-400 mt-1"><?php echo cleanInput($item['descricao']); ?></p>
                     </td>
                     <td class="px-6 py-4">
                         <?php 
@@ -143,9 +146,15 @@ $items = $stmt->fetchAll();
             <input type="hidden" name="id" id="item-id" value="">
             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
             
-            <div>
-                <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Nome do Item</label>
-                <input type="text" name="nome" id="item-nome" required class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700">
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Nome Genérico / Princípio</label>
+                    <input type="text" name="nome" id="item-nome" required class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Nome Comercial / Marca</label>
+                    <input type="text" name="nome_comercial" id="item-nome_comercial" class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700" placeholder="Opcional">
+                </div>
             </div>
 
             <div class="grid grid-cols-2 gap-6">
@@ -184,6 +193,7 @@ $items = $stmt->fetchAll();
         document.getElementById('modal-title').innerText = 'Editar Item';
         document.getElementById('item-id').value = item.id;
         document.getElementById('item-nome').value = item.nome;
+        document.getElementById('item-nome_comercial').value = item.nome_comercial || '';
         document.getElementById('item-tipo').value = item.tipo;
         document.getElementById('item-unidade').value = item.unidade;
         document.getElementById('item-descricao').value = item.descricao;
@@ -195,6 +205,7 @@ $items = $stmt->fetchAll();
         document.getElementById('modal-title').innerText = 'Novo Item';
         document.getElementById('item-id').value = '';
         document.getElementById('item-nome').value = '';
+        document.getElementById('item-nome_comercial').value = '';
         document.getElementById('item-tipo').value = 'Material';
         document.getElementById('item-unidade').value = '';
         document.getElementById('item-descricao').value = '';

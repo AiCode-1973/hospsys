@@ -61,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($acao === 'salvar_item') {
         $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
         $nome = cleanInput($_POST['nome']);
+        $nome_comercial = cleanInput($_POST['nome_comercial'] ?? '');
         $tipo = cleanInput($_POST['tipo']);
         $unidade = cleanInput($_POST['unidade']);
         $descricao = cleanInput($_POST['descricao']);
@@ -73,13 +74,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if ($id) {
                 // Editar
-                $stmt = $pdo->prepare("UPDATE car_itens_mestres SET nome = ?, tipo = ?, unidade = ?, descricao = ? WHERE id = ?");
-                $stmt->execute([$nome, $tipo, $unidade, $descricao, $id]);
+                $stmt = $pdo->prepare("UPDATE car_itens_mestres SET nome = ?, nome_comercial = ?, tipo = ?, unidade = ?, descricao = ? WHERE id = ?");
+                $stmt->execute([$nome, $nome_comercial, $tipo, $unidade, $descricao, $id]);
                 $_SESSION['mensagem_sucesso'] = "Item atualizado com sucesso!";
             } else {
                 // Criar
-                $stmt = $pdo->prepare("INSERT INTO car_itens_mestres (nome, tipo, unidade, descricao) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$nome, $tipo, $unidade, $descricao]);
+                $stmt = $pdo->prepare("INSERT INTO car_itens_mestres (nome, nome_comercial, tipo, unidade, descricao) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$nome, $nome_comercial, $tipo, $unidade, $descricao]);
                 $_SESSION['mensagem_sucesso'] = "Novo item adicionado ao catálogo!";
             }
         } catch (PDOException $e) {
@@ -223,6 +224,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mensagem_sucesso'] = "Carrinho removido com sucesso!";
         }
         redirect('car_dashboard.php');
+    }
+
+    // Excluir Item do Padrão de um Carrinho
+    if ($acao === 'excluir_padrao') {
+        $id_carrinho = (int)$_GET['id_carrinho'];
+        $id_item = (int)$_GET['id_item'];
+        
+        $stmt = $pdo->prepare("DELETE FROM car_composicao_ideal WHERE id_carrinho = ? AND id_item = ?");
+        if ($stmt->execute([$id_carrinho, $id_item])) {
+            $_SESSION['mensagem_sucesso'] = "Item removido do padrão deste carrinho.";
+        }
+        redirect("car_estoque.php?id=$id_carrinho");
     }
 
     redirect('car_dashboard.php');
