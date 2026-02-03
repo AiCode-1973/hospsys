@@ -128,10 +128,15 @@ $carrinhos = $pdo->query("SELECT id, nome FROM car_carrinhos WHERE ativo = 1 ORD
                         </span>
                     </td>
                     <td class="px-6 py-4">
-                        <div class="flex items-center justify-center">
+                        <div class="flex items-center justify-center gap-2">
                             <button onclick="alert('Funcionalidade de detalhamento em breve')" class="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm">
                                 <i class="fas fa-eye fa-xs"></i>
                             </button>
+                            <a href="car_action.php?acao=excluir_checklist&id=<?php echo $ch['id']; ?>" 
+                               onclick="return confirm('ATENÇÃO: Deseja realmente excluir este registro de auditoria? Esta ação é irreversível.')"
+                               class="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm flex items-center justify-center">
+                                <i class="fas fa-trash-alt fa-xs"></i>
+                            </a>
                         </div>
                     </td>
                 </tr>

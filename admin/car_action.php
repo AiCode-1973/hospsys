@@ -117,6 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $pdo->commit();
+            atualizarStatusCarrinho($pdo, $id_carrinho);
             $_SESSION['mensagem_sucesso'] = "Padrão do carrinho atualizado com sucesso!";
         } catch (PDOException $e) {
             $pdo->rollBack();
@@ -144,8 +145,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id_checklist = $pdo->lastInsertId();
 
             // 2. Processa cada item
-            $novo_status_carrinho = 'OK';
-
             foreach ($item_qtds as $item_id => $qtd) {
                 $lote = $item_lotes[$item_id] ?? '';
                 $validade = !empty($item_validades[$item_id]) ? $item_validades[$item_id] : null;
@@ -160,41 +159,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     VALUES (?, ?, ?, ?, ?)
                     ON DUPLICATE KEY UPDATE lote = VALUES(lote), data_validade = VALUES(data_validade), quantidade_atual = VALUES(quantidade_atual)
                 ");
-                $stmt_est->execute([$id_carrinho, $item_id, $lote, $validade, $qtd]);
+                $stmt_est->execute([$id_carrinho, $item_id, $lote, $validade, (int)$qtd]);
 
                 // Log de Movimentação (simplificado: ajuste via checklist)
                 $stmt_mov = $pdo->prepare("INSERT INTO car_movimentacoes (id_carrinho, id_item, id_usuario, tipo_movimentacao, quantidade, observacao) VALUES (?, ?, ?, 'Ajuste', ?, 'Ajuste via Checklist')");
-                $stmt_mov->execute([$id_carrinho, $item_id, $_SESSION['user_id'], $qtd]);
-
-                // 3. Lógica de Cálculo do Status do Carrinho
-                // Busca limites para este item
-                $stmt_lim = $pdo->prepare("SELECT quantidade_ideal, quantidade_minima FROM car_composicao_ideal WHERE id_carrinho = ? AND id_item = ?");
-                $stmt_lim->execute([$id_carrinho, $item_id]);
-                $limites = $stmt_lim->fetch();
-
-                if ($limites) {
-                    // Verificação de Validade
-                    if ($validade) {
-                        $dias = (strtotime($validade) - time()) / 86400;
-                        if ($dias < 30) $novo_status_carrinho = 'Crítico';
-                        elseif ($dias < 90 && $novo_status_carrinho !== 'Crítico') $novo_status_carrinho = 'Atenção';
-                    }
-
-                    // Verificação de Quantidade
-                    if ($qtd < $limites['quantidade_minima']) {
-                        $novo_status_carrinho = 'Crítico';
-                    } elseif ($qtd < $limites['quantidade_ideal'] && $novo_status_carrinho !== 'Crítico') {
-                        $novo_status_carrinho = 'Atenção';
-                    }
-                }
+                $stmt_mov->execute([$id_carrinho, $item_id, $_SESSION['user_id'], (int)$qtd]);
             }
 
-            // Atualiza status final do carrinho
-            $stmt_up_status = $pdo->prepare("UPDATE car_carrinhos SET status = ? WHERE id = ?");
-            $stmt_up_status->execute([$novo_status_carrinho, $id_carrinho]);
+            // 3. Atualiza status final do carrinho usando a função centralizada
+            atualizarStatusCarrinho($pdo, $id_carrinho);
 
             $pdo->commit();
-            $_SESSION['mensagem_sucesso'] = "Checklist finalizado! Carrinho atualizado para status: $novo_status_carrinho";
+            $_SESSION['mensagem_sucesso'] = "Checklist finalizado com sucesso!";
         } catch (PDOException $e) {
             $pdo->rollBack();
             $_SESSION['mensagem_erro'] = "Erro ao processar checklist: " . $e->getMessage();
@@ -233,9 +209,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $stmt = $pdo->prepare("DELETE FROM car_composicao_ideal WHERE id_carrinho = ? AND id_item = ?");
         if ($stmt->execute([$id_carrinho, $id_item])) {
+            atualizarStatusCarrinho($pdo, $id_carrinho);
             $_SESSION['mensagem_sucesso'] = "Item removido do padrão deste carrinho.";
         }
         redirect("car_estoque.php?id=$id_carrinho");
+    }
+
+    // Excluir Checklist (Auditoria)
+    if ($acao === 'excluir_checklist') {
+        $id = (int)$_GET['id'];
+        
+        // Busca o ID do carrinho antes de excluir para poder recalcular o status
+        $stmt_get = $pdo->prepare("SELECT id_carrinho FROM car_checklists WHERE id = ?");
+        $stmt_get->execute([$id]);
+        $id_carrinho = $stmt_get->fetchColumn();
+
+        $stmt = $pdo->prepare("DELETE FROM car_checklists WHERE id = ?");
+        if ($stmt->execute([$id])) {
+            atualizarStatusCarrinho($pdo, $id_carrinho);
+            $_SESSION['mensagem_sucesso'] = "Registro de auditoria removido com sucesso.";
+        }
+        redirect('car_relatorios.php');
     }
 
     redirect('car_dashboard.php');

@@ -75,3 +75,58 @@ function logAccess($pdo, $user_id, $usuario_tentativa, $sucesso, $mensagem) {
     $stmt = $pdo->prepare("INSERT INTO logs_acesso (id_usuario, usuario_tentativa, ip_address, sucesso, mensagem) VALUES (?, ?, ?, ?, ?)");
     $stmt->execute([$user_id, $usuario_tentativa, $ip, $sucesso, $mensagem]);
 }
+
+/**
+ * Recalcula e atualiza o status de um carrinho (OK, Atenção, Crítico)
+ * Baseado na composição ideal vs estoque atual
+ */
+function atualizarStatusCarrinho($pdo, $id_carrinho) {
+    if (!$id_carrinho) return;
+
+    // 1. Busca composição vs estoque
+    $sql = "
+        SELECT comp.quantidade_ideal, comp.quantidade_minima,
+               est.quantidade_atual, est.data_validade
+        FROM car_composicao_ideal comp
+        LEFT JOIN car_estoque_atual est ON (comp.id_item = est.id_item AND comp.id_carrinho = est.id_carrinho)
+        WHERE comp.id_carrinho = ?
+    ";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$id_carrinho]);
+    $itens = $stmt->fetchAll();
+
+    $novo_status = 'OK';
+
+    // Se não houver itens padronizados, o status é OK (vazio)
+    if (!empty($itens)) {
+        foreach ($itens as $i) {
+            $qtd = $i['quantidade_atual'] ?? 0;
+            
+            // Verificação de Validade
+            if (!empty($i['data_validade'])) {
+                $hoje = time();
+                $validade = strtotime($i['data_validade']);
+                $dias = ($validade - $hoje) / 86400;
+
+                if ($validade < $hoje || $dias < 30) {
+                    $novo_status = 'Crítico';
+                } elseif ($dias < 90 && $novo_status !== 'Crítico') {
+                    $novo_status = 'Atenção';
+                }
+            }
+
+            // Verificação de Quantidade
+            if ($qtd < $i['quantidade_minima']) {
+                $novo_status = 'Crítico';
+            } elseif ($qtd < $i['quantidade_ideal'] && $novo_status !== 'Crítico') {
+                $novo_status = 'Atenção';
+            }
+
+            // Se atingiu o status Crítico, já podemos parar o loop
+            if ($novo_status === 'Crítico') break;
+        }
+    }
+
+    $stmt_up = $pdo->prepare("UPDATE car_carrinhos SET status = ? WHERE id = ?");
+    $stmt_up->execute([$novo_status, (int)$id_carrinho]);
+}
