@@ -93,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($acao === 'salvar_composicao') {
         $id_carrinho = (int)$_POST['id_carrinho'];
         $item_ids = $_POST['item_id'] ?? [];
+        $gavetas = $_POST['gaveta'] ?? [];
         $qtd_ideais = $_POST['qtd_ideal'] ?? [];
         $qtd_minimas = $_POST['qtd_minima'] ?? [];
 
@@ -103,13 +104,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt_del = $pdo->prepare("DELETE FROM car_composicao_ideal WHERE id_carrinho = ?");
             $stmt_del->execute([$id_carrinho]);
 
-            $stmt_ins = $pdo->prepare("INSERT INTO car_composicao_ideal (id_carrinho, id_item, quantidade_ideal, quantidade_minima) VALUES (?, ?, ?, ?)");
+            $stmt_ins = $pdo->prepare("INSERT INTO car_composicao_ideal (id_carrinho, id_item, gaveta, quantidade_ideal, quantidade_minima) VALUES (?, ?, ?, ?, ?)");
             
             foreach ($item_ids as $index => $item_id) {
                 if (!empty($item_id)) {
                     $stmt_ins->execute([
                         $id_carrinho, 
                         (int)$item_id, 
+                        (int)$gavetas[$index],
                         (int)$qtd_ideais[$index], 
                         (int)$qtd_minimas[$index]
                     ]);
@@ -133,6 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $observacoes = cleanInput($_POST['observacoes']);
         
         $item_qtds = $_POST['item_qtd'] ?? [];
+        $item_gavetas = $_POST['item_gaveta'] ?? [];
         $item_lotes = $_POST['item_lote'] ?? [];
         $item_validades = $_POST['item_validade'] ?? [];
 
@@ -146,20 +149,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // 2. Processa cada item
             foreach ($item_qtds as $item_id => $qtd) {
+                $gaveta = (int)($item_gavetas[$item_id] ?? 1);
                 $lote = $item_lotes[$item_id] ?? '';
                 $validade = !empty($item_validades[$item_id]) ? $item_validades[$item_id] : null;
                 
                 // Salva detalhe do checklist
-                $stmt_det = $pdo->prepare("INSERT INTO car_checklist_itens (id_checklist, id_item, conferido, quantidade_encontrada, validade_conferida) VALUES (?, ?, 1, ?, ?)");
-                $stmt_det->execute([$id_checklist, $item_id, $qtd, $validade]);
+                $stmt_det = $pdo->prepare("INSERT INTO car_checklist_itens (id_checklist, id_item, gaveta, conferido, quantidade_encontrada, validade_conferida) VALUES (?, ?, ?, 1, ?, ?)");
+                $stmt_det->execute([$id_checklist, $item_id, $gaveta, $qtd, $validade]);
 
                 // Atualiza/Insere Estoque Atual
                 $stmt_est = $pdo->prepare("
-                    INSERT INTO car_estoque_atual (id_carrinho, id_item, lote, data_validade, quantidade_atual) 
-                    VALUES (?, ?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE lote = VALUES(lote), data_validade = VALUES(data_validade), quantidade_atual = VALUES(quantidade_atual)
+                    INSERT INTO car_estoque_atual (id_carrinho, id_item, gaveta, lote, data_validade, quantidade_atual) 
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE gaveta = VALUES(gaveta), lote = VALUES(lote), data_validade = VALUES(data_validade), quantidade_atual = VALUES(quantidade_atual)
                 ");
-                $stmt_est->execute([$id_carrinho, $item_id, $lote, $validade, (int)$qtd]);
+                $stmt_est->execute([$id_carrinho, $item_id, $gaveta, $lote, $validade, (int)$qtd]);
 
                 // Log de Movimentação (simplificado: ajuste via checklist)
                 $stmt_mov = $pdo->prepare("INSERT INTO car_movimentacoes (id_carrinho, id_item, id_usuario, tipo_movimentacao, quantidade, observacao) VALUES (?, ?, ?, 'Ajuste', ?, 'Ajuste via Checklist')");
@@ -176,6 +180,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mensagem_erro'] = "Erro ao processar checklist: " . $e->getMessage();
         }
         redirect('car_dashboard.php');
+    }
+
+    // 5. Salvar Nomes/Descrições das Gavetas
+    if ($acao === 'salvar_nomes_gavetas') {
+        $id_carrinho = (int)$_POST['id_carrinho'];
+        $nomes = $_POST['gaveta_nome'] ?? [];
+
+        try {
+            foreach ($nomes as $num => $nome) {
+                $num_gaveta = (int)$num;
+                $descricao = cleanInput($nome);
+
+                $stmt = $pdo->prepare("
+                    REPLACE INTO car_gavetas_config (id_carrinho, num_gaveta, descricao) 
+                    VALUES (?, ?, ?)
+                ");
+                $stmt->execute([$id_carrinho, $num_gaveta, $descricao]);
+            }
+            $_SESSION['mensagem_sucesso'] = "Nomes das gavetas atualizados!";
+        } catch (PDOException $e) {
+            $_SESSION['mensagem_erro'] = "Erro ao salvar nomes: " . $e->getMessage();
+        }
+        redirect("car_estoque.php?id=$id_carrinho");
     }
 
     // Outras ações virão aqui...

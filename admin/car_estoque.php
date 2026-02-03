@@ -21,17 +21,26 @@ if (!$carrinho) {
 // Busca Composição Ideal vs Estoque Atual
 $sql = "
     SELECT i.id as item_id, i.nome, i.tipo, i.unidade,
-           comp.quantidade_ideal, comp.quantidade_minima,
+           comp.quantidade_ideal, comp.quantidade_minima, comp.gaveta,
            est.quantidade_atual, est.lote, est.data_validade, est.id as estoque_id
     FROM car_itens_mestres i
     JOIN car_composicao_ideal comp ON i.id = comp.id_item
     LEFT JOIN car_estoque_atual est ON (i.id = est.id_item AND est.id_carrinho = comp.id_carrinho)
     WHERE comp.id_carrinho = ? AND i.ativo = 1
-    ORDER BY i.tipo, i.nome
+    ORDER BY comp.gaveta, i.tipo, i.nome
 ";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$id_carrinho]);
 $itens_estoque = $stmt->fetchAll();
+
+// Busca nomes das gavetas
+$stmt_gavetas = $pdo->prepare("SELECT num_gaveta, descricao FROM car_gavetas_config WHERE id_carrinho = ?");
+$stmt_gavetas->execute([$id_carrinho]);
+$gavetas_labels = $stmt_gavetas->fetchAll(PDO::FETCH_KEY_PAIR);
+// Garante que existam labels para 1-4
+for ($i=1; $i<=4; $i++) {
+    if (!isset($gavetas_labels[$i])) $gavetas_labels[$i] = "Gaveta $i";
+}
 
 // Busca todos os itens mestres para o modal de composição
 $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE ativo = 1 ORDER BY nome ASC")->fetchAll();
@@ -49,6 +58,9 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
         </p>
     </div>
     <div class="flex gap-3 w-full md:w-auto">
+        <button onclick="document.getElementById('modal-gavetas-config').classList.remove('hidden')" class="flex-1 md:flex-none px-4 py-3 bg-white border border-slate-200 text-slate-500 rounded-2xl font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
+            <i class="fas fa-tags"></i> Nomes das Gavetas
+        </button>
         <button onclick="document.getElementById('modal-composicao').classList.remove('hidden')" class="flex-1 md:flex-none px-5 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
             <i class="fas fa-cog"></i> Padronizar Itens
         </button>
@@ -69,6 +81,7 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
             <thead class="bg-slate-50 text-slate-500 text-[10px] uppercase tracking-widest font-black">
                 <tr>
                     <th class="px-6 py-4">Item</th>
+                    <th class="px-6 py-4 text-center">Gaveta</th>
                     <th class="px-6 py-4 text-center">Ideal</th>
                     <th class="px-6 py-4 text-center">Mínimo</th>
                     <th class="px-6 py-4 text-center">Atual</th>
@@ -117,6 +130,11 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                     <td class="px-6 py-4">
                         <p class="font-bold text-slate-700 text-sm"><?php echo cleanInput($i['nome']); ?></p>
                         <p class="text-[10px] text-slate-400 uppercase font-black tracking-tighter"><?php echo $i['tipo']; ?> (<?php echo $i['unidade']; ?>)</p>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-black rounded-lg border border-slate-200 uppercase">
+                            <?php echo $gavetas_labels[$i['gaveta']] ?? "GAVETA ".$i['gaveta']; ?>
+                        </span>
                     </td>
                     <td class="px-6 py-4 text-center font-bold text-slate-400"><?php echo $i['quantidade_ideal']; ?></td>
                     <td class="px-6 py-4 text-center font-bold text-slate-400"><?php echo $i['quantidade_minima']; ?></td>
@@ -173,16 +191,17 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
             
             <div class="bg-slate-50 p-6 rounded-3xl space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
                 <div class="grid grid-cols-12 gap-4 text-[9px] font-black uppercase text-slate-400 tracking-widest px-2 group">
-                    <div class="col-span-5">Item do Catálogo</div>
-                    <div class="col-span-3 text-center">Ideal</div>
-                    <div class="col-span-3 text-center">Mínimo</div>
+                    <div class="col-span-4">Item do Catálogo</div>
+                    <div class="col-span-2 text-center">Gaveta</div>
+                    <div class="col-span-2 text-center">Ideal</div>
+                    <div class="col-span-2 text-center">Mínimo</div>
                     <div class="col-span-1"></div>
                 </div>
 
                 <div id="container-itens" class="space-y-3">
                     <?php if (empty($itens_estoque)): ?>
                         <div class="item-row grid grid-cols-12 gap-4 items-center">
-                            <div class="col-span-5">
+                            <div class="col-span-4">
                                 <select name="item_id[]" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
                                     <option value="">Selecione um item...</option>
                                     <?php foreach ($todos_itens as $ti): ?>
@@ -190,10 +209,18 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-span-3">
+                            <div class="col-span-2">
+                                <select name="gaveta[]" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-center text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+                                    <option value="1">G1</option>
+                                    <option value="2">G2</option>
+                                    <option value="3">G3</option>
+                                    <option value="4">G4</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2">
                                 <input type="number" name="qtd_ideal[]" value="10" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-center text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
-                            <div class="col-span-3">
+                            <div class="col-span-2">
                                 <input type="number" name="qtd_minima[]" value="5" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-center text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                             <div class="col-span-1 text-right">
@@ -205,7 +232,7 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                     <?php else: ?>
                         <?php foreach($itens_estoque as $ie): ?>
                             <div class="item-row grid grid-cols-12 gap-4 items-center">
-                                <div class="col-span-5">
+                                <div class="col-span-4">
                                     <select name="item_id[]" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none">
                                         <option value="<?php echo $ie['item_id']; ?>" selected><?php echo cleanInput($ie['nome']); ?></option>
                                         <?php foreach ($todos_itens as $ti): ?>
@@ -215,13 +242,21 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-span-3">
+                                <div class="col-span-2">
+                                    <select name="gaveta[]" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-center text-slate-700 outline-none appearance-none">
+                                        <option value="1" <?php echo $ie['gaveta'] == 1 ? 'selected' : ''; ?>>G1</option>
+                                        <option value="2" <?php echo $ie['gaveta'] == 2 ? 'selected' : ''; ?>>G2</option>
+                                        <option value="3" <?php echo $ie['gaveta'] == 3 ? 'selected' : ''; ?>>G3</option>
+                                        <option value="4" <?php echo $ie['gaveta'] == 4 ? 'selected' : ''; ?>>G4</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-2">
                                     <input type="number" name="qtd_ideal[]" value="<?php echo $ie['quantidade_ideal']; ?>" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-center text-slate-700">
                                 </div>
-                                <div class="col-span-3">
+                                <div class="col-span-2">
                                     <input type="number" name="qtd_minima[]" value="<?php echo $ie['quantidade_minima']; ?>" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-center text-slate-700">
                                 </div>
-                                <div class="col-span-1 text-right">
+                                <div class="col-span-2 text-right">
                                     <button type="button" onclick="removerLinha(this)" class="w-8 h-8 flex items-center justify-center text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
                                         <i class="fas fa-trash-alt text-xs"></i>
                                     </button>
@@ -271,6 +306,45 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
         }
     }
 </script>
+
+<!-- Modal: Configurar Nomes das Gavetas -->
+<div id="modal-gavetas-config" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl">
+        <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div>
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight">Nomes das Gavetas</h2>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Personalize a identificação</p>
+            </div>
+            <button onclick="document.getElementById('modal-gavetas-config').classList.add('hidden')" class="w-10 h-10 flex items-center justify-center bg-white text-slate-400 rounded-full hover:text-slate-600 transition-all shadow-sm">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form action="car_action.php" method="POST" class="p-8 space-y-6">
+            <input type="hidden" name="acao" value="salvar_nomes_gavetas">
+            <input type="hidden" name="id_carrinho" value="<?php echo $id_carrinho; ?>">
+            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+
+            <div class="space-y-4">
+                <?php for($i=1; $i<=4; $i++): ?>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Gaveta <?php echo $i; ?></label>
+                    <input type="text" name="gaveta_nome[<?php echo $i; ?>]" 
+                           value="<?php echo htmlspecialchars($gavetas_labels[$i] ?? "Gaveta $i"); ?>"
+                           placeholder="Ex: Medicamentos, Vias Aéreas..."
+                           class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700 transition-all">
+                </div>
+                <?php endfor; ?>
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-200">
+                    Salvar Alterações
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <?php 
 echo "</div></main></body></html>";

@@ -30,17 +30,26 @@ $id_carrinho = $carrinho['id'];
 // Busca itens padronizados para este carrinho
 $sql = "
     SELECT i.id as item_id, i.nome, i.tipo, i.unidade,
-           comp.quantidade_ideal, comp.quantidade_minima,
+           comp.quantidade_ideal, comp.quantidade_minima, comp.gaveta,
            est.quantidade_atual, est.lote, est.data_validade
     FROM car_itens_mestres i
     JOIN car_composicao_ideal comp ON i.id = comp.id_item
     LEFT JOIN car_estoque_atual est ON (i.id = est.id_item AND est.id_carrinho = comp.id_carrinho)
     WHERE comp.id_carrinho = ? AND i.ativo = 1
-    ORDER BY i.tipo, i.nome
+    ORDER BY comp.gaveta, i.tipo, i.nome
 ";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$id_carrinho]);
 $itens = $stmt->fetchAll();
+
+// Busca nomes das gavetas
+$stmt_gavetas = $pdo->prepare("SELECT num_gaveta, descricao FROM car_gavetas_config WHERE id_carrinho = ?");
+$stmt_gavetas->execute([$id_carrinho]);
+$gavetas_labels = $stmt_gavetas->fetchAll(PDO::FETCH_KEY_PAIR);
+// Garante que existam labels para 1-4
+for ($i=1; $i<=4; $i++) {
+    if (!isset($gavetas_labels[$i])) $gavetas_labels[$i] = "Gaveta $i";
+}
 
 if (empty($itens)) {
     $_SESSION['mensagem_erro'] = "Este carrinho ainda não foi padronizado. Defina os itens no Estoque primeiro.";
@@ -69,7 +78,7 @@ if (empty($itens)) {
                 <select name="tipo_checklist" class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700 appearance-none">
                     <option value="Mensal">Mensal (Preventiva)</option>
                     <option value="Pós-Uso">Pós-Uso (Reposição)</option>
-                    <option value="Diário">Monitoramento Diário</option>
+                    <option value="Cadastro Inicial">Cadastro Inicial</option>
                 </select>
             </div>
             <div>
@@ -80,11 +89,26 @@ if (empty($itens)) {
             </div>
         </div>
 
-        <div class="space-y-4">
-            <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-4">Itens a serem conferidos</h3>
-            
-            <?php foreach ($itens as $i): ?>
+        <div class="space-y-8">
+            <?php 
+            $current_gaveta = null;
+            foreach ($itens as $i): 
+                if ($current_gaveta !== $i['gaveta']):
+                    $current_gaveta = $i['gaveta'];
+            ?>
+                <div class="pt-4 first:pt-0">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="h-px flex-1 bg-slate-100"></div>
+                        <span class="px-4 py-1.5 bg-slate-800 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg">
+                            <?php echo $gavetas_labels[$current_gaveta] ?? "Gaveta $current_gaveta"; ?>
+                        </span>
+                        <div class="h-px flex-1 bg-slate-100"></div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
                 <div class="item-card bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:border-blue-200 transition-all">
+                    <input type="hidden" name="item_gaveta[<?php echo $i['item_id']; ?>]" value="<?php echo $i['gaveta']; ?>">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div class="flex-1">
                             <span class="text-[9px] font-black uppercase tracking-widest <?php echo ($i['tipo'] == 'Medicamento') ? 'text-blue-500' : 'text-emerald-500'; ?>">
