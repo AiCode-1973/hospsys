@@ -1,8 +1,13 @@
 <?php
 require_once __DIR__ . '/../includes/header.php';
 
-// Busca setores
-$setores = $pdo->query("SELECT * FROM fugulin_setores ORDER BY nome ASC")->fetchAll();
+// Busca setores que possuem leitos cadastrados
+$setores = $pdo->query("
+    SELECT DISTINCT s.* 
+    FROM fugulin_setores s 
+    INNER JOIN fugulin_leitos l ON s.id = l.id_setor 
+    ORDER BY s.nome ASC
+")->fetchAll();
 
 // Busca pacientes ativos para o datalist
 $pacientes = $pdo->query("SELECT * FROM fugulin_pacientes WHERE ativo = 1 ORDER BY nome ASC")->fetchAll();

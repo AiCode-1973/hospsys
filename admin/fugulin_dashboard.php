@@ -4,8 +4,13 @@ require_once __DIR__ . '/../includes/header.php';
 // Data de hoje
 $hoje = date('Y-m-d');
 
-// Busca todos os setores para o filtro
-$setores = $pdo->query("SELECT * FROM fugulin_setores ORDER BY nome ASC")->fetchAll();
+// Busca setores que possuem leitos cadastrados para o filtro
+$setores = $pdo->query("
+    SELECT DISTINCT s.* 
+    FROM fugulin_setores s 
+    INNER JOIN fugulin_leitos l ON s.id = l.id_setor 
+    ORDER BY s.nome ASC
+")->fetchAll();
 
 // Filtro de setor
 $filter_sector = isset($_GET['filter_sector']) ? (int)$_GET['filter_sector'] : null;
