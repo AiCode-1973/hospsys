@@ -10,32 +10,26 @@ $setores = $pdo->query("SELECT * FROM fugulin_setores ORDER BY nome ASC")->fetch
 // Filtro de setor
 $filter_sector = isset($_GET['filter_sector']) ? (int)$_GET['filter_sector'] : null;
 
-// Busca o resumo por classificação do dia (última de cada paciente hoje, apenas ativos)
+// Busca o resumo por classificação (última de cada paciente ativo)
 $sql_resumo = "
-    SELECT c.classificacao, COUNT(DISTINCT c.id_paciente) as total
-    FROM fugulin_classificacoes c
-    JOIN fugulin_pacientes p ON c.id_paciente = p.id
-    WHERE DATE(c.data_registro) = ?
-    AND p.ativo = 1
+    SELECT c.classificacao, COUNT(*) as total
+    FROM fugulin_pacientes p
+    JOIN fugulin_classificacoes c ON c.id = (
+        SELECT id FROM fugulin_classificacoes 
+        WHERE id_paciente = p.id 
+        ORDER BY data_registro DESC LIMIT 1
+    )
+    WHERE p.ativo = 1
 ";
 
-$params_resumo = [$hoje];
+$params_resumo = [];
 
 if ($filter_sector) {
     $sql_resumo .= " AND c.id_setor = ?";
     $params_resumo[] = $filter_sector;
 }
 
-$sql_resumo .= "
-    AND c.id = (
-        SELECT id FROM fugulin_classificacoes 
-        WHERE id_paciente = c.id_paciente 
-        AND DATE(data_registro) = ?
-        ORDER BY data_registro DESC LIMIT 1
-    )
-    GROUP BY c.classificacao
-";
-$params_resumo[] = $hoje;
+$sql_resumo .= " GROUP BY c.classificacao";
 
 $stmt_resumo = $pdo->prepare($sql_resumo);
 $stmt_resumo->execute($params_resumo);
@@ -53,39 +47,44 @@ $categorias = [
 // Calcula total geral de hoje
 $total_dia = array_sum($resumo_bruto);
 
-// Busca lista de pacientes ativos classificados hoje
-$sql_hoje = "
-    SELECT c.*, s.nome as setor, l.descricao as leito, u.nome as profissional
-    FROM fugulin_classificacoes c
-    JOIN usuarios u ON c.id_usuario = u.id
-    JOIN fugulin_pacientes p ON c.id_paciente = p.id
-    LEFT JOIN fugulin_setores s ON c.id_setor = s.id
-    LEFT JOIN fugulin_leitos l ON c.id_leito = l.id
-    WHERE DATE(c.data_registro) = ?
-    AND p.ativo = 1
-";
-
-$params_hoje = [$hoje];
-
-if ($filter_sector) {
-    $sql_hoje .= " AND c.id_setor = ?";
-    $params_hoje[] = $filter_sector;
-}
-
-$sql_hoje .= "
-    AND c.id = (
+// Busca lista de TODOS os pacientes ativos e sua última classificação
+$sql_censo = "
+    SELECT p.nome as paciente_nome, p.id as paciente_id,
+           c.classificacao, c.data_registro, 
+           s.nome as setor, l.descricao as leito, u.nome as profissional
+    FROM fugulin_pacientes p
+    LEFT JOIN fugulin_classificacoes c ON c.id = (
         SELECT id FROM fugulin_classificacoes 
-        WHERE id_paciente = c.id_paciente 
-        AND DATE(data_registro) = ?
+        WHERE id_paciente = p.id 
         ORDER BY data_registro DESC LIMIT 1
     )
-    ORDER BY c.data_registro DESC
+    LEFT JOIN usuarios u ON c.id_usuario = u.id
+    LEFT JOIN fugulin_setores s ON c.id_setor = s.id
+    LEFT JOIN fugulin_leitos l ON c.id_leito = l.id
+    WHERE p.ativo = 1
 ";
-$params_hoje[] = $hoje;
 
-$stmt_hoje = $pdo->prepare($sql_hoje);
-$stmt_hoje->execute($params_hoje);
-$pacientes_hoje = $stmt_hoje->fetchAll();
+$params_censo = [];
+
+if ($filter_sector) {
+    $sql_censo .= " AND c.id_setor = ?";
+    $params_censo[] = $filter_sector;
+}
+
+$sql_censo .= " ORDER BY c.data_registro DESC, p.nome ASC";
+
+$stmt_censo = $pdo->prepare($sql_censo);
+$stmt_censo->execute($params_censo);
+$pacientes_censo = $stmt_censo->fetchAll();
+
+// Contagem de quem foi classificado HOJE para o card de estatística
+$total_classificados_hoje = 0;
+foreach ($pacientes_censo as $p) {
+    if ($p['data_registro'] && date('Y-m-d', strtotime($p['data_registro'])) == $hoje) {
+        $total_classificados_hoje++;
+    }
+}
+$total_censo = count($pacientes_censo);
 ?>
 
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
@@ -131,16 +130,21 @@ $pacientes_hoje = $stmt_hoje->fetchAll();
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Lista de Pacientes do Dia -->
+    <!-- Lista de Pacientes do Censo -->
     <div class="lg:col-span-2 space-y-4">
-        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <i class="fas fa-list-ul text-blue-500"></i>
-            Pacientes Classificados Hoje
+        <h3 class="text-lg font-bold text-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-list-ul text-blue-500"></i>
+                Censo de Pacientes Ativos
+            </div>
+            <span class="text-[10px] bg-blue-100 text-blue-600 px-3 py-1 rounded-full font-black uppercase tracking-widest">
+                <?php echo $total_classificados_hoje; ?> / <?php echo $total_censo; ?> HOJE
+            </span>
         </h3>
         
-        <?php if (empty($pacientes_hoje)): ?>
+        <?php if (empty($pacientes_censo)): ?>
             <div class="bg-white p-12 rounded-3xl border border-dashed border-slate-200 text-center text-slate-400">
-                Ainda não foram realizadas classificações hoje.
+                Nenhum paciente ativo no momento.
             </div>
         <?php else: ?>
             <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
@@ -154,15 +158,19 @@ $pacientes_hoje = $stmt_hoje->fetchAll();
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        <?php foreach ($pacientes_hoje as $p): 
-                             $color = "text-slate-500 bg-slate-100";
-                             if (strpos($p['classificacao'], 'CM') !== false) $color = "text-green-700 bg-green-100";
-                             else if (strpos($p['classificacao'], 'intermediários') !== false) $color = "text-blue-700 bg-blue-100";
-                             else if (strpos($p['classificacao'], 'Alta') !== false) $color = "text-amber-700 bg-amber-100";
-                             else if (strpos($p['classificacao'], 'CSI') !== false) $color = "text-orange-700 bg-orange-100";
-                             else if (strpos($p['classificacao'], 'Intensivos') !== false) $color = "text-red-700 bg-red-100";
+                        <?php foreach ($pacientes_censo as $p): 
+                             $foi_hoje = ($p['data_registro'] && date('Y-m-d', strtotime($p['data_registro'])) == $hoje);
+                             
+                             $color = "text-slate-400 bg-slate-100";
+                             if ($p['classificacao']) {
+                                if (strpos($p['classificacao'], 'CM') !== false) $color = "text-green-700 bg-green-100";
+                                else if (strpos($p['classificacao'], 'intermediários') !== false) $color = "text-blue-700 bg-blue-100";
+                                else if (strpos($p['classificacao'], 'Alta') !== false) $color = "text-amber-700 bg-amber-100";
+                                else if (strpos($p['classificacao'], 'CSI') !== false) $color = "text-orange-700 bg-orange-100";
+                                else if (strpos($p['classificacao'], 'Intensivos') !== false) $color = "text-red-700 bg-red-100";
+                             }
                         ?>
-                        <tr class="hover:bg-slate-50/50 transition-colors">
+                        <tr class="hover:bg-slate-50/50 transition-colors <?php echo !$foi_hoje ? 'opacity-70' : ''; ?>">
                             <td class="px-6 py-4">
                                 <span class="text-sm font-bold text-slate-700 uppercase"><?php echo cleanInput($p['paciente_nome']); ?></span>
                             </td>
@@ -170,12 +178,24 @@ $pacientes_hoje = $stmt_hoje->fetchAll();
                                 <?php echo $p['setor']; ?> <span class="text-blue-500"><?php echo $p['leito']; ?></span>
                             </td>
                             <td class="px-6 py-4">
-                                <span class="px-2 py-1 rounded-lg text-[9px] font-black uppercase <?php echo $color; ?>">
-                                    <?php echo $p['classificacao']; ?>
-                                </span>
+                                <?php if ($p['classificacao']): ?>
+                                    <span class="px-2 py-1 rounded-lg text-[9px] font-black uppercase <?php echo $color; ?>">
+                                        <?php echo $p['classificacao']; ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-slate-100 text-slate-400">Não Classificado</span>
+                                <?php endif; ?>
                             </td>
-                            <td class="px-6 py-4 text-center text-xs font-bold text-slate-400">
-                                <?php echo date('H:i', strtotime($p['data_registro'])); ?>
+                            <td class="px-6 py-4 text-center">
+                                <?php if ($foi_hoje): ?>
+                                    <span class="text-xs font-black text-green-500">
+                                        <i class="fas fa-check-circle mr-1"></i> <?php echo date('H:i', strtotime($p['data_registro'])); ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-[9px] font-black text-amber-500 uppercase tracking-tighter">
+                                        <i class="fas fa-clock mr-1"></i> Pendente
+                                    </span>
+                                <?php endif; ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -188,18 +208,19 @@ $pacientes_hoje = $stmt_hoje->fetchAll();
     <!-- Estatísticas de Ocupação/Equipe -->
     <div class="space-y-6">
         <div class="bg-slate-800 p-8 rounded-3xl text-white shadow-xl shadow-slate-900/20 relative overflow-hidden">
-            <i class="fas fa-users-cog absolute -bottom-4 -right-4 text-8xl opacity-10"></i>
-            <h4 class="text-sm font-black uppercase tracking-widest opacity-60 mb-6">Total de Avaliações</h4>
-            <div class="text-6xl font-black mb-2"><?php echo $total_dia; ?></div>
-            <p class="text-xs text-slate-400">Pacientes processados hoje.</p>
+            <i class="fas fa-house-user absolute -bottom-4 -right-4 text-8xl opacity-10"></i>
+            <h4 class="text-sm font-black uppercase tracking-widest opacity-60 mb-6">Censo Ativo</h4>
+            <div class="text-6xl font-black mb-2"><?php echo $total_censo; ?></div>
+            <p class="text-xs text-slate-400">Pacientes em monitoramento.</p>
             
             <div class="mt-8 pt-6 border-t border-slate-700 space-y-4">
                 <div class="flex justify-between items-center text-xs">
-                    <span class="opacity-60">Meta do Dia</span>
-                    <span class="font-bold">Em andamento</span>
+                    <span class="opacity-60">Progresso do Dia</span>
+                    <span class="font-bold"><?php echo $total_classificados_hoje; ?> de <?php echo $total_censo; ?></span>
                 </div>
-                <div class="w-full bg-slate-700 h-2 rounded-full">
-                    <div class="bg-blue-500 h-full w-2/3 rounded-full"></div>
+                <?php $perc_progresso = $total_censo > 0 ? ($total_classificados_hoje / $total_censo) * 100 : 0; ?>
+                <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+                    <div class="bg-blue-500 h-full transition-all duration-1000" style="width: <?php echo $perc_progresso; ?>%"></div>
                 </div>
             </div>
         </div>
