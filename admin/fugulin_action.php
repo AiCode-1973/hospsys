@@ -71,6 +71,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id_paciente = $pdo->lastInsertId();
             }
 
+            // --- VALIDAÇÃO DE LEITO OCUPADO ---
+            $stmt_occ = $pdo->prepare("
+                SELECT p.nome 
+                FROM fugulin_pacientes p
+                JOIN fugulin_classificacoes c ON c.id = (
+                    SELECT id FROM fugulin_classificacoes 
+                    WHERE id_paciente = p.id 
+                    ORDER BY data_registro DESC LIMIT 1
+                )
+                WHERE p.ativo = 1 AND c.id_leito = ? AND p.id != ?
+            ");
+            $stmt_occ->execute([$id_leito, $id_paciente]);
+            $ocupante = $stmt_occ->fetchColumn();
+
+            if ($ocupante) {
+                throw new Exception("O leito selecionado já está ocupado pelo paciente '$ocupante'.");
+            }
+            // ----------------------------------
+
             // Salva classificação principal
             $stmt_main = $pdo->prepare("
                 INSERT INTO fugulin_classificacoes (id_usuario, id_paciente, id_setor, id_leito, paciente_nome, total_pontos, classificacao)
@@ -159,6 +178,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id_paciente = $pdo->lastInsertId();
             }
 
+            // --- VALIDAÇÃO DE LEITO OCUPADO ---
+            $stmt_occ = $pdo->prepare("
+                SELECT p.nome 
+                FROM fugulin_pacientes p
+                JOIN fugulin_classificacoes c ON c.id = (
+                    SELECT id FROM fugulin_classificacoes 
+                    WHERE id_paciente = p.id 
+                    ORDER BY data_registro DESC LIMIT 1
+                )
+                WHERE p.ativo = 1 AND c.id_leito = ? AND p.id != ?
+            ");
+            $stmt_occ->execute([$id_leito, $id_paciente]);
+            $ocupante = $stmt_occ->fetchColumn();
+
+            if ($ocupante) {
+                throw new Exception("O leito selecionado já está ocupado pelo paciente '$ocupante'.");
+            }
+            // ----------------------------------
+
             // 3. Salva como uma NOVA classificação (preservando o histórico conforme solicitado)
             $stmt_main = $pdo->prepare("
                 INSERT INTO fugulin_classificacoes (id_usuario, id_paciente, id_setor, id_leito, paciente_nome, total_pontos, classificacao)
@@ -206,6 +244,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
             $pdo->beginTransaction();
+
+            // --- VALIDAÇÃO DE LEITO OCUPADO ---
+            $stmt_occ = $pdo->prepare("
+                SELECT p.nome 
+                FROM fugulin_pacientes p
+                JOIN fugulin_classificacoes c ON c.id = (
+                    SELECT id FROM fugulin_classificacoes 
+                    WHERE id_paciente = p.id 
+                    ORDER BY data_registro DESC LIMIT 1
+                )
+                WHERE p.ativo = 1 AND c.id_leito = ? AND p.id != ?
+            ");
+            $stmt_occ->execute([$id_leito, $id_paciente]);
+            $ocupante = $stmt_occ->fetchColumn();
+
+            if ($ocupante) {
+                throw new Exception("O leito selecionado já está ocupado pelo paciente '$ocupante'.");
+            }
+            // ----------------------------------
 
             // 1. Atualiza dados básicos do paciente
             $stmt_p = $pdo->prepare("UPDATE fugulin_pacientes SET nome = ?, prontuario = ? WHERE id = ?");
