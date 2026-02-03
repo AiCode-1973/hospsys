@@ -186,6 +186,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mensagem_erro'] = "Erro ao atualizar classificação: " . $e->getMessage();
             redirect("fugulin_novo.php?id=$id_classificacao");
         }
+    } elseif ($acao === 'atualizar_registro') {
+        $token = $_POST['csrf_token'] ?? '';
+        if (!validateCSRFToken($token)) {
+            $_SESSION['mensagem_erro'] = "Falha na validação CSRF.";
+            redirect('fugulin_lista.php');
+        }
+
+        $id_paciente = (int)$_POST['id_paciente'];
+        $nome = cleanInput($_POST['nome']);
+        $prontuario = cleanInput($_POST['prontuario']);
+        $id_setor = (int)$_POST['setor'];
+        $id_leito = (int)$_POST['leito'];
+
+        if (!$id_paciente || empty($nome) || !$id_setor || !$id_leito) {
+            $_SESSION['mensagem_erro'] = "Preencha todos os campos obrigatórios.";
+            redirect('fugulin_lista.php');
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            // 1. Atualiza dados básicos do paciente
+            $stmt_p = $pdo->prepare("UPDATE fugulin_pacientes SET nome = ?, prontuario = ? WHERE id = ?");
+            $stmt_p->execute([$nome, $prontuario, $id_paciente]);
+
+            // 2. Busca a última classificação para atualizar a localização
+            $stmt_check = $pdo->prepare("SELECT id FROM fugulin_classificacoes WHERE id_paciente = ? ORDER BY data_registro DESC LIMIT 1");
+            $stmt_check->execute([$id_paciente]);
+            $last_id = $stmt_check->fetchColumn();
+
+            if ($last_id) {
+                // Atualiza a última existente e renova a data para hoje
+                $stmt_up = $pdo->prepare("UPDATE fugulin_classificacoes SET id_setor = ?, id_leito = ?, paciente_nome = ?, data_registro = NOW() WHERE id = ?");
+                $stmt_up->execute([$id_setor, $id_leito, $nome, $last_id]);
+            } else {
+                // Se o paciente nunca foi classificado, criamos um registro inicial de "Não Classificado" para que ele apareça no censo/painel
+                $stmt_ins = $pdo->prepare("
+                    INSERT INTO fugulin_classificacoes (id_usuario, id_paciente, id_setor, id_leito, paciente_nome, total_pontos, classificacao)
+                    VALUES (?, ?, ?, ?, ?, 0, 'Não Classificado')
+                ");
+                $stmt_ins->execute([$_SESSION['user_id'], $id_paciente, $id_setor, $id_leito, $nome]);
+            }
+
+            $pdo->commit();
+            $_SESSION['mensagem_sucesso'] = "Registro do paciente '$nome' atualizado com sucesso!";
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $_SESSION['mensagem_erro'] = "Erro ao atualizar registro: " . $e->getMessage();
+        }
+        redirect('fugulin_lista.php');
     }
 }
 

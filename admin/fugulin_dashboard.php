@@ -12,9 +12,9 @@ $filter_sector = isset($_GET['filter_sector']) ? (int)$_GET['filter_sector'] : n
 
 // Busca o resumo por classificação (última de cada paciente ativo)
 $sql_resumo = "
-    SELECT c.classificacao, COUNT(*) as total
+    SELECT COALESCE(c.classificacao, 'Não Classificado') as cat, COUNT(*) as total
     FROM fugulin_pacientes p
-    JOIN fugulin_classificacoes c ON c.id = (
+    LEFT JOIN fugulin_classificacoes c ON c.id = (
         SELECT id FROM fugulin_classificacoes 
         WHERE id_paciente = p.id 
         ORDER BY data_registro DESC LIMIT 1
@@ -29,7 +29,7 @@ if ($filter_sector) {
     $params_resumo[] = $filter_sector;
 }
 
-$sql_resumo .= " GROUP BY c.classificacao";
+$sql_resumo .= " GROUP BY cat";
 
 $stmt_resumo = $pdo->prepare($sql_resumo);
 $stmt_resumo->execute($params_resumo);
@@ -41,7 +41,8 @@ $categorias = [
     'Cuidados intermediários (CI)' => ['cor' => 'bg-blue-500', 'texto' => 'text-blue-600', 'bg_claro' => 'bg-blue-50', 'icon' => 'fas fa-info-circle'],
     'Alta dependência (AD)' => ['cor' => 'bg-amber-500', 'texto' => 'text-amber-600', 'bg_claro' => 'bg-amber-50', 'icon' => 'fas fa-exclamation-circle'],
     'Cuidados Semi-Intensivo (CSI)' => ['cor' => 'bg-orange-500', 'texto' => 'text-orange-600', 'bg_claro' => 'bg-orange-50', 'icon' => 'fas fa-procedures'],
-    'Cuidados Intensivos (CI)' => ['cor' => 'bg-red-500', 'texto' => 'text-red-600', 'bg_claro' => 'bg-red-50', 'icon' => 'fas fa-heartbeat']
+    'Cuidados Intensivos (CI)' => ['cor' => 'bg-red-500', 'texto' => 'text-red-600', 'bg_claro' => 'bg-red-50', 'icon' => 'fas fa-heartbeat'],
+    'Não Classificado' => ['cor' => 'bg-slate-400', 'texto' => 'text-slate-500', 'bg_claro' => 'bg-slate-50', 'icon' => 'fas fa-user-clock']
 ];
 
 // Calcula total geral de hoje
@@ -108,7 +109,7 @@ $total_censo = count($pacientes_censo);
 </div>
 
 <!-- Cards de Resumo -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+<div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
     <?php foreach ($categorias as $nome => $style): 
         $count = $resumo_bruto[$nome] ?? 0;
         $perc = $total_dia > 0 ? ($count / $total_dia) * 100 : 0;

@@ -1,0 +1,19 @@
+COLUMNS FOR fugulin_pacientes:
+- id (int(11))
+- nome (varchar(255))
+- prontuario (varchar(50))
+- data_cadastro (timestamp)
+- ativo (tinyint(1))
+- data_alta (datetime)
+
+COLUMNS FOR fugulin_classificacoes:
+- id (int(11))
+- id_usuario (int(11))
+- id_paciente (int(11))
+- id_setor (int(11))
+- id_leito (int(11))
+- paciente_nome (varchar(255))
+- total_pontos (int(11))
+- classificacao (varchar(100))
+- data_registro (timestamp)
+

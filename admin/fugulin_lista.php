@@ -12,6 +12,7 @@ $filter_sector = isset($_GET['filter_sector']) ? (int)$_GET['filter_sector'] : n
 $sql = "
     SELECT p.id, p.nome, p.prontuario, p.data_cadastro,
            c.classificacao, c.total_pontos, c.data_registro, c.id as last_class_id,
+           c.id_setor, c.id_leito,
            u.nome as profissional, s.nome as setor, l.descricao as leito,
            (SELECT COUNT(*) FROM fugulin_classificacoes WHERE id_paciente = p.id) as total_historico
     FROM fugulin_pacientes p
@@ -72,6 +73,8 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $pacientes = $stmt->fetchAll();
 
+// Busca todos os leitos para o JavaScript de edição
+$leitos_all = $pdo->query("SELECT id, id_setor, descricao FROM fugulin_leitos ORDER BY descricao ASC")->fetchAll();
 ?>
 
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
@@ -208,6 +211,17 @@ $pacientes = $stmt->fetchAll();
                         <a href="fugulin_novo.php?id_paciente=<?php echo $p['id']; ?>" class="w-10 h-10 inline-flex items-center justify-center bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all shadow-sm" title="Nova Avaliação">
                             <i class="fas fa-plus-circle"></i>
                         </a>
+                        <button onclick='openEditModal(<?php 
+                            echo json_encode([
+                                "id" => $p["id"],
+                                "nome" => $p["nome"],
+                                "prontuario" => $p["prontuario"],
+                                "id_setor" => $p["id_setor"],
+                                "id_leito" => $p["id_leito"]
+                            ]); 
+                        ?>)' class="w-10 h-10 inline-flex items-center justify-center bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Atualizar Registro">
+                            <i class="fas fa-user-edit"></i>
+                        </button>
                         <a href="fugulin_action.php?acao=alta&id=<?php echo $p['id']; ?>" 
                            onclick="return confirm('Confirmar alta do paciente <?php echo cleanInput($p['nome']); ?>? Ele deixará de aparecer na lista ativa.')"
                            class="w-10 h-10 inline-flex items-center justify-center bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm" title="Dar Alta">
@@ -285,4 +299,90 @@ $pacientes = $stmt->fetchAll();
         url.searchParams.set('p', '1'); // Reseta para a primeira página ao mudar o limite
         window.location.href = url.toString();
     }
+
+    const allLeitos = <?php echo json_encode($leitos_all); ?>;
+
+    function openEditModal(p) {
+        document.getElementById('edit-id').value = p.id;
+        document.getElementById('edit-nome').value = p.nome;
+        document.getElementById('edit-prontuario').value = p.prontuario;
+        
+        const setorSelect = document.getElementById('edit-setor');
+        setorSelect.value = p.id_setor;
+        
+        updateLeitos(p.id_setor, p.id_leito);
+        
+        document.getElementById('modal-editar-registro').classList.remove('hidden');
+    }
+
+    function updateLeitos(setorId, leitoIdToSelect = null) {
+        const leitoSelect = document.getElementById('edit-leito');
+        leitoSelect.innerHTML = '<option value="">Selecione o Leito</option>';
+        
+        if (!setorId) return;
+
+        const filtered = allLeitos.filter(l => l.id_setor == setorId);
+        filtered.forEach(l => {
+            const opt = document.createElement('option');
+            opt.value = l.id;
+            opt.textContent = l.descricao;
+            if (leitoIdToSelect && l.id == leitoIdToSelect) opt.selected = true;
+            leitoSelect.appendChild(opt);
+        });
+    }
 </script>
+
+<!-- Modal Atualizar Registro -->
+<div id="modal-editar-registro" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div>
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight">Atualizar Registro</h2>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Apenas identificação e localização</p>
+            </div>
+            <button onclick="document.getElementById('modal-editar-registro').classList.add('hidden')" class="w-10 h-10 flex items-center justify-center bg-white text-slate-400 rounded-full hover:text-slate-600 transition-all shadow-sm">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form action="fugulin_action.php" method="POST" class="p-8 space-y-6">
+            <input type="hidden" name="acao" value="atualizar_registro">
+            <input type="hidden" name="id_paciente" id="edit-id">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Nome do Paciente</label>
+                    <input type="text" name="nome" id="edit-nome" required class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500 outline-none font-bold text-slate-700">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Prontuário</label>
+                    <input type="text" name="prontuario" id="edit-prontuario" class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500 outline-none font-bold text-slate-700">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Setor</label>
+                        <select name="setor" id="edit-setor" required onchange="updateLeitos(this.value)" class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500 outline-none font-bold text-slate-700 appearance-none">
+                            <option value="">Setor</option>
+                            <?php foreach ($setores as $s): ?>
+                                <option value="<?php echo $s['id']; ?>"><?php echo $s['nome']; ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Leito</label>
+                        <select name="leito" id="edit-leito" required class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500 outline-none font-bold text-slate-700 appearance-none">
+                            <option value="">Leito</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-amber-200">
+                    Confirmar Atualização
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
