@@ -145,8 +145,9 @@ $setores = $pdo->query("SELECT * FROM fugulin_setores ORDER BY nome ASC")->fetch
                         <?php echo $c['status']; ?>
                     </span>
                     <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onclick='openEdit(<?php echo json_encode($c); ?>)' class="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg hover:bg-blue-600 hover:text-white transition-all"><i class="fas fa-edit fa-xs"></i></button>
-                        <button onclick="openQR('<?php echo cleanInput($c['nome']); ?>', '<?php echo $c['qr_code_token']; ?>')" class="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                        <button onclick='openQuickView(<?php echo $c["id"]; ?>, "<?php echo cleanInput($c["nome"]); ?>")' class="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white transition-all shadow-sm" title="Visualizar Itens"><i class="fas fa-eye fa-xs"></i></button>
+                        <button onclick='openEdit(<?php echo json_encode($c); ?>)' class="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Editar Configurações"><i class="fas fa-edit fa-xs"></i></button>
+                        <button onclick="openQR('<?php echo cleanInput($c['nome']); ?>', '<?php echo $c['qr_code_token']; ?>')" class="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white transition-all shadow-sm" title="QR Code">
                             <i class="fas fa-qrcode fa-xs"></i>
                         </button>
                     </div>
@@ -282,6 +283,43 @@ $setores = $pdo->query("SELECT * FROM fugulin_setores ORDER BY nome ASC")->fetch
     </div>
 </div>
 
+<!-- Modal Visualização Rápida de Itens -->
+<div id="modal-quick-view" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div>
+                <h3 id="quick-view-title" class="text-2xl font-black text-slate-800 tracking-tight">Itens do Carrinho</h3>
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Listagem Completa de Medicamentos e Materiais</p>
+            </div>
+            <button onclick="document.getElementById('modal-quick-view').classList.add('hidden')" class="w-10 h-10 bg-white shadow-sm text-slate-400 hover:text-slate-600 rounded-full flex items-center justify-center transition-all">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-0 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-widest sticky top-0 z-10">
+                    <tr>
+                        <th class="px-8 py-4">Item</th>
+                        <th class="px-4 py-4 text-center">Gaveta</th>
+                        <th class="px-4 py-4 text-center">Padrao</th>
+                        <th class="px-8 py-4 text-center">Atual</th>
+                    </tr>
+                </thead>
+                <tbody id="quick-view-body" class="divide-y divide-slate-100">
+                    <!-- Conteúdo inserido via JS -->
+                </tbody>
+            </table>
+            <div id="quick-view-loading" class="p-12 text-center text-slate-400 hidden">
+                <i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i>
+                <p class="text-xs font-bold uppercase tracking-widest">Carregando estoque...</p>
+            </div>
+        </div>
+        <div class="p-8 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+            <button onclick="document.getElementById('modal-quick-view').classList.add('hidden')" class="px-8 py-3 bg-slate-800 text-white rounded-2xl font-bold hover:bg-slate-900 transition-all shadow-lg">Fechar</button>
+        </div>
+    </div>
+</div>
+
     </div>
 </div>
 
@@ -332,6 +370,51 @@ $setores = $pdo->query("SELECT * FROM fugulin_setores ORDER BY nome ASC")->fetch
         document.getElementById('btn-excluir').href = `car_action.php?acao=excluir_carrinho&id=${carrinho.id}`;
         
         document.getElementById('modal-editar').classList.remove('hidden');
+    }
+
+    async function openQuickView(id, nome) {
+        document.getElementById('quick-view-title').innerText = nome;
+        const body = document.getElementById('quick-view-body');
+        const loading = document.getElementById('quick-view-loading');
+        
+        body.innerHTML = '';
+        loading.classList.remove('hidden');
+        document.getElementById('modal-quick-view').classList.remove('hidden');
+
+        try {
+            const response = await fetch(`car_get_estoque_json.php?id=${id}`);
+            const data = await response.json();
+            
+            loading.classList.add('hidden');
+            
+            if (data.length === 0) {
+                body.innerHTML = '<tr><td colspan="4" class="px-8 py-12 text-center text-slate-400">Nenhum item padronizado neste carrinho.</td></tr>';
+                return;
+            }
+
+            data.forEach(item => {
+                const statusColor = (parseInt(item.quantidade_atual) < parseInt(item.quantidade_ideal)) ? 'text-red-500' : 'text-green-500';
+                const row = `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-8 py-4">
+                            <div class="text-sm font-bold text-slate-700">${item.nome}</div>
+                            <div class="text-[9px] font-black uppercase text-slate-400">${item.tipo}</div>
+                        </td>
+                        <td class="px-4 py-4 text-center">
+                            <span class="px-2 py-1 bg-slate-100 text-slate-500 text-[9px] font-black rounded-lg border border-slate-200">G${item.gaveta}</span>
+                        </td>
+                        <td class="px-4 py-4 text-center text-xs font-bold text-slate-400">${item.quantidade_ideal}</td>
+                        <td class="px-8 py-4 text-center">
+                            <span class="text-sm font-black ${statusColor}">${item.quantidade_atual || 0}</span>
+                        </td>
+                    </tr>
+                `;
+                body.insertAdjacentHTML('beforeend', row);
+            });
+        } catch (error) {
+            loading.classList.add('hidden');
+            body.innerHTML = '<tr><td colspan="4" class="px-8 py-12 text-center text-red-500">Erro ao carregar dados.</td></tr>';
+        }
     }
 </script>
 

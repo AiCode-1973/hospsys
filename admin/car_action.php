@@ -117,6 +117,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 }
             }
+            
+            // LIMPEZA: Remove registros de estoque físico que não estão mais no padrão
+            $stmt_clean = $pdo->prepare("
+                DELETE FROM car_estoque_atual 
+                WHERE id_carrinho = ? 
+                AND id_item NOT IN (SELECT id_item FROM car_composicao_ideal WHERE id_carrinho = ?)
+            ");
+            $stmt_clean->execute([$id_carrinho, $id_carrinho]);
 
             $pdo->commit();
             atualizarStatusCarrinho($pdo, $id_carrinho);
@@ -238,9 +246,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($acao === 'excluir_item') {
         $id = (int)$_GET['id'];
-        $stmt = $pdo->prepare("UPDATE car_itens_mestres SET ativo = 0 WHERE id = ?");
-        if ($stmt->execute([$id])) {
-            $_SESSION['mensagem_sucesso'] = "Item removido do catálogo.";
+        
+        try {
+            $pdo->beginTransaction();
+            
+            // Desativa no catálogo
+            $stmt = $pdo->prepare("UPDATE car_itens_mestres SET ativo = 0 WHERE id = ?");
+            $stmt->execute([$id]);
+
+            // Remove de todos os padrões (composição ideal)
+            $stmt_comp = $pdo->prepare("DELETE FROM car_composicao_ideal WHERE id_item = ?");
+            $stmt_comp->execute([$id]);
+
+            // Remove do estoque atual de todos os carrinhos
+            $stmt_est = $pdo->prepare("DELETE FROM car_estoque_atual WHERE id_item = ?");
+            $stmt_est->execute([$id]);
+
+            $pdo->commit();
+            $_SESSION['mensagem_sucesso'] = "Item removido do catálogo e de todos os padrões.";
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            $_SESSION['mensagem_erro'] = "Erro ao excluir: " . $e->getMessage();
         }
         redirect('car_itens.php');
     }
@@ -260,10 +286,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id_carrinho = (int)$_GET['id_carrinho'];
         $id_item = (int)$_GET['id_item'];
         
-        $stmt = $pdo->prepare("DELETE FROM car_composicao_ideal WHERE id_carrinho = ? AND id_item = ?");
-        if ($stmt->execute([$id_carrinho, $id_item])) {
+        try {
+            $pdo->beginTransaction();
+
+            // Remove do padrão
+            $stmt = $pdo->prepare("DELETE FROM car_composicao_ideal WHERE id_carrinho = ? AND id_item = ?");
+            $stmt->execute([$id_carrinho, $id_item]);
+
+            // Remove também o registro de estoque físico para este carrinho
+            $stmt_est = $pdo->prepare("DELETE FROM car_estoque_atual WHERE id_carrinho = ? AND id_item = ?");
+            $stmt_est->execute([$id_carrinho, $id_item]);
+
+            $pdo->commit();
             atualizarStatusCarrinho($pdo, $id_carrinho);
-            $_SESSION['mensagem_sucesso'] = "Item removido do padrão deste carrinho.";
+            $_SESSION['mensagem_sucesso'] = "Item removido do padrão e estoque deste carrinho.";
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            $_SESSION['mensagem_erro'] = "Erro: " . $e->getMessage();
         }
         redirect("car_estoque.php?id=$id_carrinho");
     }
