@@ -8,6 +8,7 @@ $tipo_filtro = isset($_GET['tipo']) ? cleanInput($_GET['tipo']) : '';
 // Paginação
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
 $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+if ($page < 1) $page = 1;
 $offset = ($page - 1) * $limit;
 
 // Query base
@@ -64,7 +65,17 @@ $items = $stmt->fetchAll();
                 <option value="Equipamento" <?php echo $tipo_filtro == 'Equipamento' ? 'selected' : ''; ?>>Equipamento</option>
             </select>
         </div>
+        <div class="md:w-32">
+            <select name="limit" onchange="this.form.submit()" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-bold text-slate-700 appearance-none">
+                <?php foreach([5, 10, 20, 30, 50] as $l): ?>
+                    <option value="<?php echo $l; ?>" <?php echo $limit == $l ? 'selected' : ''; ?>><?php echo $l; ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
         <button type="submit" class="bg-slate-800 text-white px-8 py-3 rounded-2xl font-bold hover:bg-slate-900 transition-all">Filtrar</button>
+        <?php if ($search || $tipo_filtro || $limit != 10): ?>
+            <a href="car_itens.php" class="px-6 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold flex items-center justify-center">Limpar</a>
+        <?php endif; ?>
     </form>
 </div>
 
@@ -119,15 +130,48 @@ $items = $stmt->fetchAll();
         </table>
     </div>
     
-    <!-- Paginação simplificada -->
+    <!-- Paginação Avançada -->
     <?php if ($total_paginas > 1): ?>
-        <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-center gap-2">
-            <?php for ($i=1; $i<=$total_paginas; $i++): ?>
-                <a href="?p=<?php echo $i; ?>&search=<?php echo $search; ?>&tipo=<?php echo $tipo_filtro; ?>" 
-                   class="w-10 h-10 flex items-center justify-center rounded-xl font-bold text-sm <?php echo $page == $i ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'; ?>">
-                    <?php echo $i; ?>
-                </a>
-            <?php endfor; ?>
+        <div class="p-6 bg-slate-50 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p class="text-xs text-slate-500 font-bold">
+                Mostrando <span class="text-slate-800"><?php echo min($total_registros, $offset + 1); ?></span> 
+                a <span class="text-slate-800"><?php echo min($total_registros, $page * $limit); ?></span> 
+                de <span class="text-slate-800"><?php echo $total_registros; ?></span> itens
+            </p>
+            
+            <div class="flex items-center gap-1">
+                <?php 
+                    $params_url = "&search=$search&tipo=$tipo_filtro&limit=$limit";
+                    
+                    // Link Anterior
+                    if ($page > 1): ?>
+                        <a href="?p=<?php echo $page - 1 . $params_url; ?>" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all">
+                            <i class="fas fa-chevron-left fa-xs"></i>
+                        </a>
+                    <?php endif;
+
+                    // Range de páginas a mostrar
+                    $range = 2;
+                    for ($i = 1; $i <= $total_paginas; $i++):
+                        if($i == 1 || $i == $total_paginas || ($i >= $page - $range && $i <= $page + $range)):
+                ?>
+                    <a href="?p=<?php echo $i . $params_url; ?>" 
+                       class="w-10 h-10 flex items-center justify-center rounded-xl font-bold text-sm <?php echo $page == $i ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'; ?>">
+                        <?php echo $i; ?>
+                    </a>
+                <?php 
+                        elseif($i == $page - $range - 1 || $i == $page + $range + 1):
+                            echo '<span class="px-2 text-slate-300">...</span>';
+                        endif;
+                    endfor;
+
+                    // Link Próximo
+                    if ($page < $total_paginas): ?>
+                        <a href="?p=<?php echo $page + 1 . $params_url; ?>" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all">
+                            <i class="fas fa-chevron-right fa-xs"></i>
+                        </a>
+                    <?php endif; ?>
+            </div>
         </div>
     <?php endif; ?>
 </div>
