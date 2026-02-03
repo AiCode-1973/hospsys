@@ -52,7 +52,7 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC LIMIT $limit O
         <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Gerenciamento de Usuários</h1>
         <p class="text-sm text-slate-500">Crie, edite e gerencie as contas de acesso do sistema.</p>
     </div>
-    <button onclick="document.getElementById('modal-novo').classList.remove('hidden')" 
+    <button onclick="openNewModal()" 
         class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
         <i class="fas fa-plus"></i>
         Novo Usuário
@@ -215,7 +215,7 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC LIMIT $limit O
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <form action="usuarios_action.php" method="POST" class="p-6 space-y-4">
+        <form action="usuarios_action.php" method="POST" class="p-6 space-y-4" autocomplete="off">
             <input type="hidden" name="acao" value="criar">
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
@@ -249,7 +249,7 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC LIMIT $limit O
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Senha</label>
-                    <input type="password" name="senha" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="password" name="senha" required autocomplete="new-password" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
             </div>
             <div class="flex justify-end gap-3 mt-8">
@@ -269,7 +269,7 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC LIMIT $limit O
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <form action="usuarios_action.php" method="POST" class="p-6 space-y-4">
+        <form action="usuarios_action.php" method="POST" class="p-6 space-y-4" autocomplete="off">
             <input type="hidden" name="acao" value="editar">
             <input type="hidden" name="id" id="edit-id">
             <div class="grid grid-cols-2 gap-4">
@@ -304,7 +304,7 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC LIMIT $limit O
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Nova Senha (deixe em branco para não alterar)</label>
-                    <input type="password" name="senha" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="password" name="senha" autocomplete="new-password" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
             </div>
             <div class="flex justify-end gap-3 mt-8">
@@ -316,6 +316,12 @@ $usuarios = $pdo->query("SELECT * FROM usuarios ORDER BY nome ASC LIMIT $limit O
 </div>
 
 <script>
+    function openNewModal() {
+        const modal = document.getElementById('modal-novo');
+        modal.querySelector('form').reset();
+        modal.classList.remove('hidden');
+    }
+
     function updateLimit(newLimit) {
         const url = new URL(window.location.href);
         url.searchParams.set('limit', newLimit);
