@@ -205,6 +205,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect("car_estoque.php?id=$id_carrinho");
     }
 
+    // 6. Editar Item Individual no Estoque
+    if ($acao === 'editar_estoque_item') {
+        $id_carrinho = (int)$_POST['id_carrinho'];
+        $id_item = (int)$_POST['id_item'];
+        $qtd = (int)$_POST['quantidade_atual'];
+        $lote = cleanInput($_POST['lote'] ?? '');
+        $validade = !empty($_POST['data_validade']) ? $_POST['data_validade'] : null;
+
+        try {
+            $stmt = $pdo->prepare("
+                INSERT INTO car_estoque_atual (id_carrinho, id_item, lote, data_validade, quantidade_atual)
+                VALUES (?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE lote = VALUES(lote), data_validade = VALUES(data_validade), quantidade_atual = VALUES(quantidade_atual)
+            ");
+            $stmt->execute([$id_carrinho, $id_item, $lote, $validade, $qtd]);
+
+            // Atualiza status do carrinho
+            atualizarStatusCarrinho($pdo, $id_carrinho);
+
+            $_SESSION['mensagem_sucesso'] = "Item atualizado no estoque.";
+        } catch (PDOException $e) {
+            $_SESSION['mensagem_erro'] = "Erro ao atualizar item: " . $e->getMessage();
+        }
+        redirect("car_estoque.php?id=$id_carrinho");
+    }
+
     // Outras ações virão aqui...
 } else {
     // Ações via GET

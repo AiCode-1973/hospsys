@@ -158,9 +158,18 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                     </td>
                     <td class="px-6 py-4 text-center">
                         <div class="flex items-center justify-center gap-2">
+                            <button onclick='openEditEstoque(<?php echo json_encode([
+                                "id_item" => $i["item_id"],
+                                "nome" => $i["nome"],
+                                "qtd" => $i["quantidade_atual"] ?? 0,
+                                "lote" => $i["lote"] ?? "",
+                                "validade" => $i["data_validade"] ?? ""
+                            ]); ?>)' class="w-8 h-8 bg-slate-50 text-slate-400 rounded-lg hover:bg-blue-50 hover:text-blue-500 transition-all flex items-center justify-center" title="Editar Estoque">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
                             <a href="car_action.php?acao=excluir_padrao&id_carrinho=<?php echo $id_carrinho; ?>&id_item=<?php echo $i['item_id']; ?>" 
                                onclick="return confirm('Remover este item do padrão deste carrinho?')"
-                               class="w-8 h-8 bg-slate-50 text-slate-300 rounded-lg hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center">
+                               class="w-8 h-8 bg-slate-50 text-slate-300 rounded-lg hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center" title="Remover do Padrão">
                                 <i class="fas fa-trash-alt text-xs"></i>
                             </a>
                         </div>
@@ -305,7 +314,59 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
             row.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
         }
     }
+
+    function openEditEstoque(data) {
+        document.getElementById('edit-item-id').value = data.id_item;
+        document.getElementById('edit-item-nome').textContent = data.nome;
+        document.getElementById('edit-item-qtd').value = data.qtd;
+        document.getElementById('edit-item-lote').value = data.lote;
+        document.getElementById('edit-item-validade').value = data.validade;
+        document.getElementById('modal-edit-estoque').classList.remove('hidden');
+    }
 </script>
+
+<!-- Modal: Editar Item Individual -->
+<div id="modal-edit-estoque" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+        <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div>
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight">Editar Estoque</h2>
+                <p id="edit-item-nome" class="text-blue-500 text-xs font-bold uppercase tracking-widest mt-1"></p>
+            </div>
+            <button onclick="document.getElementById('modal-edit-estoque').classList.add('hidden')" class="w-10 h-10 flex items-center justify-center bg-white text-slate-400 rounded-full hover:text-slate-600 transition-all shadow-sm">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form action="car_action.php" method="POST" class="p-8 space-y-6">
+            <input type="hidden" name="acao" value="editar_estoque_item">
+            <input type="hidden" name="id_carrinho" value="<?php echo $id_carrinho; ?>">
+            <input type="hidden" name="id_item" id="edit-item-id">
+            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Quantidade Atual</label>
+                    <input type="number" name="quantidade_atual" id="edit-item-qtd" required class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Lote</label>
+                    <input type="text" name="lote" id="edit-item-lote" class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Data de Validade</label>
+                    <input type="date" name="data_validade" id="edit-item-validade" class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700">
+                </div>
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-200">
+                    Confirmar Alteração
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Modal: Configurar Nomes das Gavetas -->
 <div id="modal-gavetas-config" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
