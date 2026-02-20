@@ -86,10 +86,12 @@ function atualizarStatusCarrinho($pdo, $id_carrinho) {
     // 1. Busca composição vs estoque
     $sql = "
         SELECT comp.quantidade_ideal, comp.quantidade_minima,
-               est.quantidade_atual, est.data_validade
+               SUM(est.quantidade_atual) as quantidade_atual, 
+               MIN(est.data_validade) as data_validade
         FROM car_composicao_ideal comp
         LEFT JOIN car_estoque_atual est ON (comp.id_item = est.id_item AND comp.id_carrinho = est.id_carrinho)
         WHERE comp.id_carrinho = ?
+        GROUP BY comp.id_item
     ";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$id_carrinho]);

@@ -142,10 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tipo_checklist = cleanInput($_POST['tipo_checklist']);
         $observacoes = cleanInput($_POST['observacoes']);
         
-        $item_qtds = $_POST['item_qtd'] ?? [];
-        $item_gavetas = $_POST['item_gaveta'] ?? [];
-        $item_lotes = $_POST['item_lote'] ?? [];
-        $item_validades = $_POST['item_validade'] ?? [];
+        $items = $_POST['items'] ?? [];
 
         try {
             $pdo->beginTransaction();
@@ -155,27 +152,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt_check->execute([$id_carrinho, $_SESSION['user_id'], $tipo_checklist, $observacoes]);
             $id_checklist = $pdo->lastInsertId();
 
-            // 2. Processa cada item
-            foreach ($item_qtds as $item_id => $qtd) {
-                $gaveta = (int)($item_gavetas[$item_id] ?? 1);
-                $lote = $item_lotes[$item_id] ?? '';
-                $validade = !empty($item_validades[$item_id]) ? $item_validades[$item_id] : null;
+            // 2. Processa cada item enviado (podem ser múltiplos lotes por item)
+            foreach ($items as $item) {
+                $item_id = (int)$item['item_id'];
+                $estoque_id = !empty($item['estoque_id']) ? (int)$item['estoque_id'] : null;
+                $gaveta = (int)($item['gaveta'] ?? 1);
+                $qtd = (int)($item['qtd'] ?? 0);
+                $lote = cleanInput($item['lote'] ?? '');
+                $validade = !empty($item['validade']) ? $item['validade'] : null;
                 
                 // Salva detalhe do checklist
                 $stmt_det = $pdo->prepare("INSERT INTO car_checklist_itens (id_checklist, id_item, gaveta, conferido, quantidade_encontrada, validade_conferida) VALUES (?, ?, ?, 1, ?, ?)");
                 $stmt_det->execute([$id_checklist, $item_id, $gaveta, $qtd, $validade]);
 
                 // Atualiza/Insere Estoque Atual
-                $stmt_est = $pdo->prepare("
-                    INSERT INTO car_estoque_atual (id_carrinho, id_item, gaveta, lote, data_validade, quantidade_atual) 
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE gaveta = VALUES(gaveta), lote = VALUES(lote), data_validade = VALUES(data_validade), quantidade_atual = VALUES(quantidade_atual)
-                ");
-                $stmt_est->execute([$id_carrinho, $item_id, $gaveta, $lote, $validade, (int)$qtd]);
+                if ($estoque_id) {
+                    $stmt_est = $pdo->prepare("
+                        UPDATE car_estoque_atual 
+                        SET gaveta = ?, lote = ?, data_validade = ?, quantidade_atual = ?
+                        WHERE id = ? AND id_carrinho = ?
+                    ");
+                    $stmt_est->execute([$gaveta, $lote, $validade, $qtd, $estoque_id, $id_carrinho]);
+                } else {
+                    $stmt_est = $pdo->prepare("
+                        INSERT INTO car_estoque_atual (id_carrinho, id_item, gaveta, lote, data_validade, quantidade_atual) 
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE gaveta = VALUES(gaveta), lote = VALUES(lote), data_validade = VALUES(data_validade), quantidade_atual = VALUES(quantidade_atual)
+                    ");
+                    $stmt_est->execute([$id_carrinho, $item_id, $gaveta, $lote, $validade, $qtd]);
+                }
 
                 // Log de Movimentação (simplificado: ajuste via checklist)
                 $stmt_mov = $pdo->prepare("INSERT INTO car_movimentacoes (id_carrinho, id_item, id_usuario, tipo_movimentacao, quantidade, observacao) VALUES (?, ?, ?, 'Ajuste', ?, 'Ajuste via Checklist')");
-                $stmt_mov->execute([$id_carrinho, $item_id, $_SESSION['user_id'], (int)$qtd]);
+                $stmt_mov->execute([$id_carrinho, $item_id, $_SESSION['user_id'], $qtd]);
             }
 
             // 3. Atualiza status final do carrinho usando a função centralizada
@@ -222,12 +231,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $validade = !empty($_POST['data_validade']) ? $_POST['data_validade'] : null;
 
         try {
-            $stmt = $pdo->prepare("
-                INSERT INTO car_estoque_atual (id_carrinho, id_item, lote, data_validade, quantidade_atual)
-                VALUES (?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE lote = VALUES(lote), data_validade = VALUES(data_validade), quantidade_atual = VALUES(quantidade_atual)
-            ");
-            $stmt->execute([$id_carrinho, $id_item, $lote, $validade, $qtd]);
+            $id_estoque = isset($_POST['id_estoque']) ? (int)$_POST['id_estoque'] : null;
+
+            if ($id_estoque) {
+                // Atualiza lote existente
+                $stmt = $pdo->prepare("
+                    UPDATE car_estoque_atual 
+                    SET lote = ?, data_validade = ?, quantidade_atual = ?
+                    WHERE id = ? AND id_carrinho = ?
+                ");
+                $stmt->execute([$lote, $validade, $qtd, $id_estoque, $id_carrinho]);
+            } else {
+                // Insere novo lote (ou atualiza se for exatamente o mesmo lote para o mesmo item)
+                $stmt = $pdo->prepare("
+                    INSERT INTO car_estoque_atual (id_carrinho, id_item, lote, data_validade, quantidade_atual)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE quantidade_atual = quantidade_atual + VALUES(quantidade_atual), data_validade = VALUES(data_validade)
+                ");
+                $stmt->execute([$id_carrinho, $id_item, $lote, $validade, $qtd]);
+            }
 
             // Atualiza status do carrinho
             atualizarStatusCarrinho($pdo, $id_carrinho);
@@ -322,6 +344,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mensagem_sucesso'] = "Registro de auditoria removido com sucesso.";
         }
         redirect('car_relatorios.php');
+    }
+
+    // Excluir Lote Específico
+    if ($acao === 'excluir_lote') {
+        $id = (int)$_GET['id'];
+        $id_carrinho = (int)$_GET['id_carrinho'];
+        
+        $stmt = $pdo->prepare("DELETE FROM car_estoque_atual WHERE id = ? AND id_carrinho = ?");
+        if ($stmt->execute([$id, $id_carrinho])) {
+            atualizarStatusCarrinho($pdo, $id_carrinho);
+            $_SESSION['mensagem_sucesso'] = "Lote removido.";
+        }
+        redirect("car_estoque.php?id=$id_carrinho");
     }
 
     redirect('car_dashboard.php');

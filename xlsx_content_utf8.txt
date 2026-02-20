@@ -1,0 +1,246 @@
+﻿UNIDADE DE TERAPIA INTENSIVA ||||||||||Alerta|
+||||||Data:|46073|||AtenþÒo
+LISTA DE CONFERENCIA DO CARRO DE EMERG╩NCIA 1||||||||
+1¬ GAVETA|||||Lacre:||
+Qtade|Farmaco|Nome Comercial|   ApresentaþÒo||Total|Validade|Lote|Dias
+3|AAS|Acetilsalicilico|100 mg|cp|0|||
+||||||||
+||||||||
+6|Clopidrogrel|Plavix|75 mg|cp|0|||
+||||||||
+|||||||||
+||||||||
+|||||||||
+||||||||
+2|Isossorbida|Isordil|5 mg|cp|0|||
+||||||||
+20|Adrenalina |Adren|1mg / ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+5|Adenosina||3mg/ ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+5|Agua Destilada||10 ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+8|Amiodarona|Ancoron|50 mg/3 ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+Qtade|Farmaco|Nome Comercial|   ApresentaþÒo||Total|Validade|Lote|Dias
+10|Atropina||0,25mg/ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+5|Bic. De Sodio 8.4%||10 ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+5|Cloreto de Sodio 0,9%||10 ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+2|Dobutamina 12,5 mg|Dobutrex|20mg|ap|0|||
+||||||||
+4|Dopamina 5 mg|Revivan|50mg/10ml|ap|0|||
+||||||||
+||||||||
+||||||||
+5|Furosemida|Lasix|10 mg/2ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+3|Gluconato Calcio 10%||10 ml|ap|0|||
+||||||||
+||||||||
+5|Glicose 50%||10 ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+5|Hidralazina|Nepresol|20 mg/ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+2|Hidrocortisona|Flebocortid|500 mg|fr|0|||
+||||||||
+2|Hidrocortisona|Flebocortid|100mg|fr|0|||
+||||||||
+2|Kanakion|Kavit|10 mg/ml|ap|0|||
+||||||||
+2|Encrise|Vasopressina|20UI/ml|ap|0|||
+||||||||
+Qtade|Farmaco|Nome Comercial|   ApresentaþÒo||Total|Validade|Lote|Dias
+2|Nitroglicerina |Tridil|5mg/ml|ap|0|||
+||||||||
+1|Licocaina 2% sem vaso|Xylestein|20mg/ml|fr|0|||
+1|Succitrat|Succinil Colin|100mg|fr|0|||
+1|Alteplase|Actilyse|50mg/50ml|fr|0|||
+1|Nitroprussiato|Nipride|25mg/ml|ap|0|||
+8|Noradrenalina|Norepinefrina|1mg/ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+5|Sulf. MagnÚsio 10%||10 ml|ap|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+2|Metropolol Tartarato|Selozok||ap|0|||
+||||||||
+2|Bricanyl|Sulfato de      Terbutalina|1 ml|ap|0|||
+||||||||
+Qtade|MATERIAL|||Qtade|Total|Validade|Lote|Dias
+2|Agulha 30x7|||u|0|||
+||||||||
+6|Agulha 40 x12|||u|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+2|Seringa 1 ml c/ agulha|||u|0|||
+||||||||
+2|Seringa 3 ml|||u|0|||
+||||||||
+5|Seringa 5 ml|||u|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+2|Seringa 20 ml|||u|0|||
+||||||||
+5|Seringa 10 ml|||u|0|||
+||||||||
+|||||||||
+|||||||||
+||||||||
+6|Seringa Preenchida - Salina||10ml|u|0|||
+||||||||
+||||||||
+||||||||
+||||||||
+||||||||
+1|Jelco n║ 16|||u|0|||
+1|Jelco n║ 18|||u|0|||
+2|Jelco n║ 20|||u|0|||
+||||||||
+2|Jelco n║ 22|||u|0|||
+||||||||
+2|IV FIX|||u|0|||
+||||||||
+||||||||
+Qtade|MATERIAL|||Qtade|Total|Validade|Lote|Dias
+1|Cateter tipo Ëculos|||u|0|||
+1|Mascara Ventury |||u|0|||
+2|ExtensÒo de O▓|||u|0|||
+||||||||
+1|Mascara nÒo reinalante |||u|0|||
+1|Canula Guedel n║ 2|||u|0|||
+1|Canula Guedel n║ 3|||u|0|||
+2|Fio Guia|||u|0|||
+||||||||
+2|Sonda de AspiraþÒo n║12|||u|0|||
+||||||||
+1|Sonda de AspiraþÒo n║14|||u|0|||
+2|ExtensÒo de AspiraþÒo|||u|0|||
+||||||||
+1|Tubo endotraqueal n.06|||u|0|||
+1|Tubo endotraqueal n.6,5|||U|0|||
+1|Tubo endotraqueal n.7|||u|0|||
+2|Tubo endotraqueal n.7,5|||u|0|||
+||||||||
+2|Tubo endotraqueal n.8|||u|0|||
+||||||||
+2|Tubo endotraqueal n.8,5|||u|0|||
+||||||||
+1|Tubo endotraqueal n.9|||u|0|||
+1|Sonda de aspiraþÒo Sistema Fech.|||u|0|||
+1|Filtro Bacteriologico|||u|0|||
+1|Frasco coletor de secreþÒo ||250ml|u|0|||
+2|Fixador de Tubo endotraqueal|||u|0|||
+||||||||
+||||||||
+1|Luva esteril n║6,5|||u|0|||
+1|Luva esteril n║7|||u|0|||
+1|Luva esteril n║7,5|||u|0|||
+2|Luva esteril n░8|||u|0|||
+||||||||
+1|Luva esteril n░8,5|||u|0|||
+1|Lamina de bisturi  n║ 11|||u|0|||
+3|Mononylon║ 3.0|||u|0|||
+||||||||
+||||||||
+2|Tegaderme mÚdio|||u|0|||
+||||||||
+1|Saco coletor |||u|0|||
+2|Sonda Nasogastrica n║ 14|||u|0|||
+||||||||
+1|Sonda Nasogastrica n║ 16|||u|0|||
+1|Xilocaina Gel|||u|0|||
+1|Avental Cir. Est. Desc ||G|u|0|||
+1|Micropore 50 x 10 mm|||u|0|||
+1|Campo Cirur. c/ fenestra||1.30 x 1.80m|u|0|||
+2|Cateter Venoso Central DL|||u|0|||
+||||||||
+4¬ GAVETA||||||||
+Qtade|Farmaco|Nome Comercial|   ApresentaþÒo||Total|Validade|Lote|Dias
+1|Ringer Lactato ||500 ml|fr|0|||
+1|Bicarbonato de s¾dio 8,4%||250 ml|fr|1|||
+1|Soro Fisiol¾gico ||100 ml|fr|0||||
+1|Soro Fisiol¾gico ||250 ml|fr|0|||
+1|Soro Fisiol¾gico ||500 ml|fr|0|||
+1|Soro Fisiol¾gico ||1000 ml|fr|0|||
+1|Soro Glicosado 5%||250 ml|fr|0|||
+1|Soro Glicosado 5%||500 ml|fr|0|||
+||||||||
+1|Gel condutor|||Fr|0|||
+1|Cardioversor / Desfibrilador||Patrimonio|Eq|0|||
+1|Cabo Laringosc¾pio||Patrimonio|Eq|0|||
+1|Lamina Laringoscopio Curva n║ 3|||Eq|0|||
+2|Lamina Laringoscopio Curva n║ 4|||Eq|0|||
+1|Lamina Laringoscopio Curva n║ 5|||Eq|0|||
+2|Pilhas media reserva |||Eq|0|||
+1|Tabua Rigida|||Eq|0|||
+1|Aparelho de Marca Passo||Patrimonio|Eq|0|||
+1|Cabo extensÒo do marca passo|||Eq|0|||
+1|Eletrodo de Marca passo|||Eq|0|||

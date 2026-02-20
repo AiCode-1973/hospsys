@@ -31,7 +31,7 @@ $id_carrinho = $carrinho['id'];
 $sql = "
     SELECT i.id as item_id, i.nome, i.tipo, i.unidade,
            comp.quantidade_ideal, comp.quantidade_minima, comp.gaveta,
-           est.quantidade_atual, est.lote, est.data_validade
+           est.quantidade_atual, est.lote, est.data_validade, est.id as estoque_id
     FROM car_itens_mestres i
     JOIN car_composicao_ideal comp ON i.id = comp.id_item
     LEFT JOIN car_estoque_atual est ON (i.id = est.id_item AND est.id_carrinho = comp.id_carrinho)
@@ -46,8 +46,8 @@ $itens = $stmt->fetchAll();
 $stmt_gavetas = $pdo->prepare("SELECT num_gaveta, descricao FROM car_gavetas_config WHERE id_carrinho = ?");
 $stmt_gavetas->execute([$id_carrinho]);
 $gavetas_labels = $stmt_gavetas->fetchAll(PDO::FETCH_KEY_PAIR);
-// Garante que existam labels para 1-4
-for ($i=1; $i<=4; $i++) {
+// Garante que existam labels para 1-5
+for ($i=1; $i<=5; $i++) {
     if (!isset($gavetas_labels[$i])) $gavetas_labels[$i] = "Gaveta $i";
 }
 
@@ -92,7 +92,7 @@ if (empty($itens)) {
         <div class="space-y-8">
             <?php 
             $current_gaveta = null;
-            foreach ($itens as $i): 
+            foreach ($itens as $index => $i): 
                 if ($current_gaveta !== $i['gaveta']):
                     $current_gaveta = $i['gaveta'];
             ?>
@@ -108,7 +108,9 @@ if (empty($itens)) {
             <?php endif; ?>
 
                 <div class="item-card bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:border-blue-200 transition-all">
-                    <input type="hidden" name="item_gaveta[<?php echo $i['item_id']; ?>]" value="<?php echo $i['gaveta']; ?>">
+                    <input type="hidden" name="items[<?php echo $index; ?>][item_id]" value="<?php echo $i['item_id']; ?>">
+                    <input type="hidden" name="items[<?php echo $index; ?>][estoque_id]" value="<?php echo $i['estoque_id']; ?>">
+                    <input type="hidden" name="items[<?php echo $index; ?>][gaveta]" value="<?php echo $i['gaveta']; ?>">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div class="flex-1">
                             <span class="text-[9px] font-black uppercase tracking-widest <?php echo ($i['tipo'] == 'Medicamento') ? 'text-blue-500' : 'text-emerald-500'; ?>">
@@ -121,17 +123,17 @@ if (empty($itens)) {
                         <div class="flex items-center gap-4">
                             <div class="text-center group">
                                 <label class="block text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1">Qtd Atual</label>
-                                <input type="number" name="item_qtd[<?php echo $i['item_id']; ?>]" value="<?php echo $i['quantidade_atual'] ?? $i['quantidade_ideal']; ?>" 
+                                <input type="number" name="items[<?php echo $index; ?>][qtd]" value="<?php echo $i['quantidade_atual'] ?? ''; ?>" required
                                        class="w-16 px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-center font-black text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                             </div>
                             <div class="flex-1">
                                 <label class="block text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1">Lote</label>
-                                <input type="text" name="item_lote[<?php echo $i['item_id']; ?>]" value="<?php echo cleanInput($i['lote'] ?? ''); ?>" placeholder="Lote"
+                                <input type="text" name="items[<?php echo $index; ?>][lote]" value="<?php echo cleanInput($i['lote'] ?? ''); ?>" placeholder="Lote"
                                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
                             </div>
                             <div class="flex-1">
                                 <label class="block text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1">Validade</label>
-                                <input type="date" name="item_validade[<?php echo $i['item_id']; ?>]" value="<?php echo $i['data_validade']; ?>"
+                                <input type="date" name="items[<?php echo $index; ?>][validade]" value="<?php echo $i['data_validade']; ?>"
                                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
                             </div>
                         </div>

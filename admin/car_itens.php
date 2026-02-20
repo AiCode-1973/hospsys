@@ -143,9 +143,16 @@ $items = $stmt->fetchAll();
                 <?php 
                     $params_url = "&search=$search&tipo=$tipo_filtro&limit=$limit";
                     
+                    // Link Primeira Página
+                    if ($page > 1): ?>
+                        <a href="?p=1<?php echo $params_url; ?>" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all" title="Primeira Página">
+                            <i class="fas fa-angle-double-left fa-xs"></i>
+                        </a>
+                    <?php endif;
+
                     // Link Anterior
                     if ($page > 1): ?>
-                        <a href="?p=<?php echo $page - 1 . $params_url; ?>" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all">
+                        <a href="?p=<?php echo $page - 1 . $params_url; ?>" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all" title="Página Anterior">
                             <i class="fas fa-chevron-left fa-xs"></i>
                         </a>
                     <?php endif;
@@ -167,8 +174,15 @@ $items = $stmt->fetchAll();
 
                     // Link Próximo
                     if ($page < $total_paginas): ?>
-                        <a href="?p=<?php echo $page + 1 . $params_url; ?>" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all">
+                        <a href="?p=<?php echo $page + 1 . $params_url; ?>" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all" title="Próxima Página">
                             <i class="fas fa-chevron-right fa-xs"></i>
+                        </a>
+                    <?php endif;
+
+                    // Link Última Página
+                    if ($page < $total_paginas): ?>
+                        <a href="?p=<?php echo $total_paginas . $params_url; ?>" class="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all" title="Última Página">
+                            <i class="fas fa-angle-double-right fa-xs"></i>
                         </a>
                     <?php endif; ?>
             </div>

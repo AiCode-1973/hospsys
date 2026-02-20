@@ -27,18 +27,31 @@ $sql = "
     JOIN car_composicao_ideal comp ON i.id = comp.id_item
     LEFT JOIN car_estoque_atual est ON (i.id = est.id_item AND est.id_carrinho = comp.id_carrinho)
     WHERE comp.id_carrinho = ? AND i.ativo = 1
-    ORDER BY comp.gaveta, i.tipo, i.nome
+    ORDER BY comp.gaveta, i.nome, est.data_validade ASC
 ";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$id_carrinho]);
 $itens_estoque = $stmt->fetchAll();
 
+// Versão agrupada para o Modal de Padronização (evita duplicidade por lotes)
+$sql_padrao = "
+    SELECT i.id as item_id, i.nome, comp.quantidade_ideal, comp.quantidade_minima, comp.gaveta
+    FROM car_itens_mestres i
+    JOIN car_composicao_ideal comp ON i.id = comp.id_item
+    WHERE comp.id_carrinho = ? AND i.ativo = 1
+    GROUP BY i.id
+    ORDER BY comp.gaveta, i.nome
+";
+$stmt_pad = $pdo->prepare($sql_padrao);
+$stmt_pad->execute([$id_carrinho]);
+$itens_padronizados = $stmt_pad->fetchAll();
+
 // Busca nomes das gavetas
 $stmt_gavetas = $pdo->prepare("SELECT num_gaveta, descricao FROM car_gavetas_config WHERE id_carrinho = ?");
 $stmt_gavetas->execute([$id_carrinho]);
 $gavetas_labels = $stmt_gavetas->fetchAll(PDO::FETCH_KEY_PAIR);
-// Garante que existam labels para 1-4
-for ($i=1; $i<=4; $i++) {
+// Garante que existam labels para 1-5
+for ($i=1; $i<=5; $i++) {
     if (!isset($gavetas_labels[$i])) $gavetas_labels[$i] = "Gaveta $i";
 }
 
@@ -159,16 +172,34 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                     <td class="px-6 py-4 text-center">
                         <div class="flex items-center justify-center gap-2">
                             <button onclick='openEditEstoque(<?php echo json_encode([
+                                "id_estoque" => $i["estoque_id"],
                                 "id_item" => $i["item_id"],
                                 "nome" => $i["nome"],
                                 "qtd" => $i["quantidade_atual"] ?? 0,
                                 "lote" => $i["lote"] ?? "",
                                 "validade" => $i["data_validade"] ?? ""
-                            ]); ?>)' class="w-8 h-8 bg-slate-50 text-slate-400 rounded-lg hover:bg-blue-50 hover:text-blue-500 transition-all flex items-center justify-center" title="Editar Estoque">
+                            ]); ?>)' class="w-8 h-8 bg-slate-50 text-slate-400 rounded-lg hover:bg-blue-50 hover:text-blue-500 transition-all flex items-center justify-center" title="Editar este Lote">
                                 <i class="fas fa-edit text-xs"></i>
                             </button>
+                            <button onclick='openEditEstoque(<?php echo json_encode([
+                                "id_estoque" => null,
+                                "id_item" => $i["item_id"],
+                                "nome" => $i["nome"],
+                                "qtd" => 0,
+                                "lote" => "",
+                                "validade" => ""
+                            ]); ?>)' class="w-8 h-8 bg-slate-50 text-slate-400 rounded-lg hover:bg-green-50 hover:text-green-500 transition-all flex items-center justify-center" title="Adicionar Outro Lote">
+                                <i class="fas fa-plus text-xs"></i>
+                            </button>
+                            <?php if ($i['estoque_id']): ?>
+                                <a href="car_action.php?acao=excluir_lote&id=<?php echo $i['estoque_id']; ?>&id_carrinho=<?php echo $id_carrinho; ?>" 
+                                   onclick="return confirm('Excluir este lote específico do estoque?')"
+                                   class="w-8 h-8 bg-slate-50 text-slate-300 rounded-lg hover:bg-orange-50 hover:text-orange-500 transition-all flex items-center justify-center" title="Excluir Lote">
+                                    <i class="fas fa-times text-xs"></i>
+                                </a>
+                            <?php endif; ?>
                             <a href="car_action.php?acao=excluir_padrao&id_carrinho=<?php echo $id_carrinho; ?>&id_item=<?php echo $i['item_id']; ?>" 
-                               onclick="return confirm('Remover este item do padrão deste carrinho?')"
+                               onclick="return confirm('Remover este item do padrão deste carrinho? (Isso removerá TODOS os lotes dele)')"
                                class="w-8 h-8 bg-slate-50 text-slate-300 rounded-lg hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center" title="Remover do Padrão">
                                 <i class="fas fa-trash-alt text-xs"></i>
                             </a>
@@ -208,7 +239,7 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                 </div>
 
                 <div id="container-itens" class="space-y-3">
-                    <?php if (empty($itens_estoque)): ?>
+                    <?php if (empty($itens_padronizados)): ?>
                         <div class="item-row grid grid-cols-12 gap-4 items-center">
                             <div class="col-span-4">
                                 <select name="item_id[]" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
@@ -224,6 +255,7 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                                     <option value="2">G2</option>
                                     <option value="3">G3</option>
                                     <option value="4">G4</option>
+                                    <option value="5">G5</option>
                                 </select>
                             </div>
                             <div class="col-span-2">
@@ -239,7 +271,7 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                             </div>
                         </div>
                     <?php else: ?>
-                        <?php foreach($itens_estoque as $ie): ?>
+                        <?php foreach($itens_padronizados as $ie): ?>
                             <div class="item-row grid grid-cols-12 gap-4 items-center">
                                 <div class="col-span-4">
                                     <select name="item_id[]" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none">
@@ -257,6 +289,7 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
                                         <option value="2" <?php echo $ie['gaveta'] == 2 ? 'selected' : ''; ?>>G2</option>
                                         <option value="3" <?php echo $ie['gaveta'] == 3 ? 'selected' : ''; ?>>G3</option>
                                         <option value="4" <?php echo $ie['gaveta'] == 4 ? 'selected' : ''; ?>>G4</option>
+                                        <option value="5" <?php echo $ie['gaveta'] == 5 ? 'selected' : ''; ?>>G5</option>
                                     </select>
                                 </div>
                                 <div class="col-span-2">
@@ -316,11 +349,16 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
     }
 
     function openEditEstoque(data) {
+        document.getElementById('edit-estoque-id').value = data.id_estoque || '';
         document.getElementById('edit-item-id').value = data.id_item;
-        document.getElementById('edit-item-nome').textContent = data.nome;
+        document.getElementById('edit-item-nome').textContent = data.id_estoque ? 'Editar Lote: ' + data.nome : 'Adicionar Novo Lote: ' + data.nome;
         document.getElementById('edit-item-qtd').value = data.qtd;
         document.getElementById('edit-item-lote').value = data.lote;
         document.getElementById('edit-item-validade').value = data.validade;
+        
+        // Se for adição (sem ID), o botão muda o texto
+        document.getElementById('btn-submit-edit').textContent = data.id_estoque ? 'Confirmar Alteração' : 'Adicionar Lote';
+        
         document.getElementById('modal-edit-estoque').classList.remove('hidden');
     }
 </script>
@@ -342,6 +380,7 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
             <input type="hidden" name="acao" value="editar_estoque_item">
             <input type="hidden" name="id_carrinho" value="<?php echo $id_carrinho; ?>">
             <input type="hidden" name="id_item" id="edit-item-id">
+            <input type="hidden" name="id_estoque" id="edit-estoque-id">
             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
             <div class="space-y-4">
@@ -360,7 +399,7 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
             </div>
 
             <div class="pt-4">
-                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-200">
+                <button type="submit" id="btn-submit-edit" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-200">
                     Confirmar Alteração
                 </button>
             </div>
@@ -387,7 +426,7 @@ $todos_itens = $pdo->query("SELECT id, nome, tipo FROM car_itens_mestres WHERE a
             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
             <div class="space-y-4">
-                <?php for($i=1; $i<=4; $i++): ?>
+                <?php for($i=1; $i<=5; $i++): ?>
                 <div>
                     <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2 mb-2">Gaveta <?php echo $i; ?></label>
                     <input type="text" name="gaveta_nome[<?php echo $i; ?>]" 
